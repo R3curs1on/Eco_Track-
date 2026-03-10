@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoTrack - Ecosystem Management System</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <header>
+        <div class="container">
+            <h1>🌿 EcoTrack</h1>
+            <p class="subtitle">Ecosystem Management & Food Chain Visualization</p> 
+        <div  > <a class="btn btn-success jump" href="./SImulation.html"> Go To Simulatioon </a> </div>
+
+        </div>
+   
+    </header>
+
+    <main class="container">
+        <!-- Control Panel -->
+
+            <div class="button-group"> 
+                <button id="visualize-btn" class="btn btn-success">📊 Visualize Food Chain</button>
+            </div>
+        
+        <!-- Dashboard Section -->
+        <section class="dashboard-section">
+            <div class="two-column">
+                <div class="dashboard-card">
+                    <div id="dashboard">
+                        <h3>Species Overview</h3>
+                        <p>Loading...</p>
+                    </div>
+                </div>
+                
+                <div class="dashboard-card alerts-card">
+                    <div id="alerts">
+                        <h3>Critical Populations</h3>
+                        <p>Loading...</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Visualization Section -->
+        <section class="visualization-section">
+            <h2>Food Chain Visualization</h2>
+            <div class="visualization-info">
+                <p>
+                    <span class="legend-item"><span class="color-box stable"></span> Stable (≥30)</span>
+                    <span class="legend-item"><span class="color-box critical"></span> Critical (&lt;30)</span>
+                    <span class="legend-item"><span class="color-box extinct"></span> Extinct (0)</span>
+                </p>
+            </div>
+            <div id="cymain" class="cytoscape-container">
+                <div class="cy-placeholder">
+                    <p>Click "Visualize Food Chain" to see the ecosystem graph</p>
+
+                    <div id="cy">
+
+                    </div>
+                </div>
+            </div>
+
+ 
+        </section>
+
+       
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>EcoTrack - Data Structures: HashMap • Queue • Directed Graph | Visualization: Cytoscape.js</p>
+        </div>
+    </footer>
+
+    <script type="module" src="index.js"></script>
+</body>
+</html>
