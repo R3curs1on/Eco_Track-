@@ -88,8 +88,12 @@ export function renderCytoScape(graph, containerId = 'cy') {
 
                     'background-color': ele => {
                         const pop = ele.data('population');
-                        if (pop === 0) return '#b71c1c';   // extinct
-                        if (pop < 30) return '#f57c00';    // critical
+                        const speciesType = ele.data('speciesType');
+                        const healthStatus = ele.data('healthStatus');
+                        const growthStage = ele.data('growthStage');
+
+                        if (pop === 0 || (speciesType === 'Animal' ? healthStatus === 'Critical' : growthStage === 'Dying')) return '#b71c1c';   // extinct
+                        if (pop < 30 || (speciesType === 'Animal' ? healthStatus === 'Poor' : growthStage === 'Dormant')) return '#f57c00';    // critical
                         return '#2e7d32';                  // stable
                     },
 

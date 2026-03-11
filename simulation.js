@@ -2,117 +2,38 @@ import Storage from './Storage.js';
 import CriticalPopulation from './CriticalPopulation.js';
 import { FoodChain } from './FoodChain.js';
 import { Animal, Plant } from './Species.js';
-import { renderCytoScape } from './RenderCytoscape.js';
+import { renderCytoScape } from './RenderCytoscape.js'; 
 
-// Initialize core data structures
 const storage = new Storage();
 const criticalPopulation = new CriticalPopulation();
 const foodChain = new FoodChain();
 
-let addAnimalBtn, addPlantBtn, visualizeBtn, simulateBtn; 
+let  visualizeBtn, simulateBtn; 
 
-let animalForm, plantForm, speciesSelect  ; // , dashboardDiv, alertsDiv;
-
+let speciesSelect  ;  
 let cyInstance = null; 
 
 document.addEventListener('DOMContentLoaded', () => {
     initializeDOM();
     setupEventListeners();
+    console.log('DOM loaded, initializing app... loading optios ');
     loadSampleData(); 
 });
 
 
 function initializeDOM() {
-    addAnimalBtn = document.getElementById('add-animal-btn');
-    addPlantBtn = document.getElementById('add-plant-btn');
     visualizeBtn = document.getElementById('visualize-btn');
     simulateBtn = document.getElementById('simulate-btn');
      
-
-    animalForm = document.getElementById('animal-form');
-    plantForm = document.getElementById('plant-form');
+ 
     speciesSelect = document.getElementById('species-select'); 
 
 }
 
 
-function setupEventListeners() {
-    addAnimalBtn.addEventListener('click', () => toggleForm('animal'));
-    addPlantBtn.addEventListener('click', () => toggleForm('plant'));
-     
-    document.getElementById('animal-form-submit').addEventListener('submit', handleAnimalSubmit);
-    
-    document.getElementById('plant-form-submit').addEventListener('submit', handlePlantSubmit);
-    
+function setupEventListeners() { 
     visualizeBtn.addEventListener('click', visualizeFoodChain);
     simulateBtn.addEventListener('click', handleSimulateRemoval);
-
-}
-
-
-function toggleForm(type) {
-    if (type === 'animal') {
-        animalForm.style.display = animalForm.style.display === 'none' ? 'block' : 'none';
-        plantForm.style.display = 'none';
-    } else {
-        plantForm.style.display = plantForm.style.display === 'none' ? 'block' : 'none';
-        animalForm.style.display = 'none';
-    }
-}
-
-function handleAnimalSubmit(e) {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    
-    const name = formData.get('animal-name');
-    const speciesType = formData.get('animal-type');
-    const habitat = formData.get('animal-habitat');
-    const population = parseInt(formData.get('animal-population'));
-    const healthStatus = formData.get('animal-health');
-    const age = parseInt(formData.get('animal-age'));
-    const eatsRaw = formData.get('animal-eats');
-    const eats = eatsRaw.split(',').map(item => item.trim()).filter(item => item);
-    
-    const animal = new Animal(name, speciesType, habitat, population, healthStatus, age, eats);
-    
-    storage.addSpecies(animal);
-    foodChain.addSpecies(animal);
-    
-    if (population < 30) {
-        criticalPopulation.enqueue(animal);
-    }
-    
-    e.target.reset();
-    animalForm.style.display = 'none'; 
-    updateSpeciesSelect();
-    showNotification(`Animal "${name}" added successfully!`);
-}
-
-function handlePlantSubmit(e) {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    
-    const name = formData.get('plant-name');
-    const speciesType = formData.get('plant-type');
-    const habitat = formData.get('plant-habitat');
-    const population = parseInt(formData.get('plant-population'));
-    const growthStage = formData.get('plant-growth');
-    const age = parseInt(formData.get('plant-age'));
-    
-    const plant = new Plant(name, speciesType, habitat, population, growthStage, age);
-    
-    storage.addSpecies(plant);
-    foodChain.addSpecies(plant);
-    
-    if (population < 30) {
-        criticalPopulation.enqueue(plant);
-    }
-    
-    e.target.reset();
-    plantForm.style.display = 'none';
-    updateDashboard();
-    updateSpeciesSelect();
-    showNotification(`Plant "${name}" added successfully!`);
 }
 
 
@@ -240,6 +161,22 @@ function showNotification(message, type = 'success') {
 
 
 function loadSampleData() {
+    const saved = localStorage.getItem('ecotrack-species');
+    if (saved && saved !== '[]') {
+        console.log('Using existing data from localStorage');
+        
+        // Clear existing foodChain and criticalPopulation
+        // They may have stale data
+        storage.getAllSpecies().forEach(species => {
+            foodChain.addSpecies(species);
+            if (species.population < 30) {
+                criticalPopulation.enqueue(species);
+            }
+        });
+        updateSpeciesSelect();
+        showNotification('Loaded existing ecosystem data');
+        return;
+    }
     // Sample plants
     const grass = new Plant('grass', 'Producer', 'Grassland', 500, 'mature', 2);
         const berryBush = new Plant('berry bush', 'Producer', 'Forest', 200, 'fruiting', 5);

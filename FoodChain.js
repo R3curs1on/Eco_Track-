@@ -53,6 +53,29 @@ class FoodChain{
         return visualize;
     }
 
+    removeSpecies(speciesName) {
+    const name = speciesName.toLowerCase();
+    
+    if (!this.graph.hasNode(name)) {
+        return;
+    }
+    
+    // Remove all edges where this species is source or target
+    const inEdges = this.graph.inEdges(name) || [];
+    const outEdges = this.graph.outEdges(name) || [];
+    
+    inEdges.forEach(edge => {
+        this.graph.removeEdge(edge.v, edge.w);
+    });
+    
+    outEdges.forEach(edge => {
+        this.graph.removeEdge(edge.v, edge.w);
+    });
+    
+    // Remove the node itself
+    this.graph.removeNode(name);
+}
+
     simulateRemoval( speciesName ){
         // Simulate removal by analyzing impact on BOTH prey (forward) and predators (backward)
         // Prey are affected because they lose a predator (population may increase initially but ecosystem destabilizes)
@@ -135,22 +158,22 @@ class FoodChain{
         this.graph.nodes().forEach( name => {
             if(name === speciesName) return; // skip removed species
             const species = this.graph.node(name);
-            simulateGraph.setNode(name, species);
+            simulateGraph.setNode(name.toLowerCase(), species);
         });
         this.graph.edges().forEach( edge => {
             if(edge.v === speciesName || edge.w === speciesName) return; // skip edges of removed species
-            simulateGraph.setEdge(edge.v, edge.w);
+            simulateGraph.setEdge(edge.v.toLowerCase(), edge.w.toLowerCase());
         } );
 
         results.forEach(({ species, impactFactor, direction }) => {
             const initialPopulation = species.population || 0;
             const adjustedPopulation = Math.max(0, Math.floor(initialPopulation * impactFactor));
-            console.log(`Species: ${species.name} (${direction}), Initial: ${initialPopulation}, Adjusted: ${adjustedPopulation}, Impact: ${impactFactor.toFixed(2)}`);
+            console.log(`Species: ${species.name.toLowerCase()} (${direction}), Initial: ${initialPopulation}, Adjusted: ${adjustedPopulation}, Impact: ${impactFactor.toFixed(2)}`);
 
-            const simSpecies = simulateGraph.node(species.name);
+            const simSpecies = simulateGraph.node(species.name.toLowerCase() );
             if (simSpecies) {
                 simSpecies.population = adjustedPopulation;
-                simulateGraph.setNode(species.name, simSpecies);
+                simulateGraph.setNode(species.name.toLowerCase(), simSpecies);
             }
         });
 
