@@ -1,7 +1,8 @@
+// to be discarded - was used in earlier dev of local storage handling, now we are using indexedDB for better performance and reliability
 
 // hashmap or map in js for storing species ( animal or plants ) data
 
-import { Animal, Plant, Species } from './Species.js';
+import { Animal, Plant, Species } from './client/Species.js';
 
 class Storage {
     constructor() {

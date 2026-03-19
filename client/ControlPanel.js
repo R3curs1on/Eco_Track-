@@ -1,6 +1,6 @@
-import Storage from './Storage.js';
+import Storage from '../Storage.js';
 import CriticalPopulation from './CriticalPopulation.js';
-import { FoodChain } from './FoodChain.js';
+import { FoodChain } from '../FoodChain.js';
 import { Animal, Plant } from './Species.js'; 
 const storage = new Storage();
 const criticalPopulation = new CriticalPopulation();

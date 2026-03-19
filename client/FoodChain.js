@@ -11,12 +11,14 @@ class FoodChain{
     }
 
     addSpecies(species){
-        this.graph.setNode(species.name.toLowerCase(), species);
         const curr = species ;
-        if(species instanceof Animal){
+        const name = curr.name.toLowerCase();
+
+        this.graph.setNode(name, curr);
+        if(curr instanceof Animal){
             
             curr.eats.forEach( prey => {
-                this.graph.setEdge(curr.name.toLowerCase() , prey);
+                this.graph.setEdge(name , prey);
             });
         }
     }
@@ -39,7 +41,6 @@ class FoodChain{
     }
 
     getAllSpecies(){
-
         return this.graph.nodes().map( name => this.graph.node(name) );
     }
 
