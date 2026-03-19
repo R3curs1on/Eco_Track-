@@ -55,27 +55,27 @@ class FoodChain{
     }
 
     removeSpecies(speciesName) {
-    const name = speciesName.toLowerCase();
+        const name = speciesName.toLowerCase();
     
-    if (!this.graph.hasNode(name)) {
-        return;
+        if (!this.graph.hasNode(name)) {
+            return;
+        }
+    
+        // Remove all edges where this species is source or target
+        const inEdges = this.graph.inEdges(name) || [];
+        const outEdges = this.graph.outEdges(name) || [];
+        
+        inEdges.forEach(edge => {
+            this.graph.removeEdge(edge.v, edge.w);
+        });
+        
+        outEdges.forEach(edge => {
+            this.graph.removeEdge(edge.v, edge.w);
+        });
+        
+        // Remove the node itself
+        this.graph.removeNode(name);
     }
-    
-    // Remove all edges where this species is source or target
-    const inEdges = this.graph.inEdges(name) || [];
-    const outEdges = this.graph.outEdges(name) || [];
-    
-    inEdges.forEach(edge => {
-        this.graph.removeEdge(edge.v, edge.w);
-    });
-    
-    outEdges.forEach(edge => {
-        this.graph.removeEdge(edge.v, edge.w);
-    });
-    
-    // Remove the node itself
-    this.graph.removeNode(name);
-}
 
     simulateRemoval( speciesName ){
         // Simulate removal by analyzing impact on BOTH prey (forward) and predators (backward)
