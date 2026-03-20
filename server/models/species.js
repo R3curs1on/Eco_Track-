@@ -43,14 +43,30 @@ import mongoose from 'mongoose';
 // Define the schema for Species
 const speciesSchema = new mongoose.Schema(
     {
-        name : { type : String , required : true , unique : true },
-        speciesType : { type : String , required : true }, // animal or plant
-        habitat : { type : String , required : true },
-        population : { type : Number , required : true },
+        name : { 
+            type : String ,
+            required : true ,
+            unique : true , 
+            lowercase : true , 
+            trim : true },
+        speciesType : {
+            type : String , 
+            lowercase : true ,
+            required : true }, // animal or plant
+        habitat : { 
+            type : String , 
+            required : true },
+        population : { 
+            type : Number , 
+            min : 0 ,
+            required : true },
         healthStatus : { type : String }, // for animals
         growthStage : { type : String },  // for plants
-        age : { type : Number },
-        eats : [String]  // for animals, list of food items
+        age : { type : Number , min : 0 }, // in years
+        eats : {
+            type : [String] ,  // for animals, list of food items
+            default : [] ,  // validate the food items exist in the database when adding/updating species
+        }  
     },
     { timestamps : true }
 );

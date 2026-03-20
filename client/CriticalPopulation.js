@@ -1,56 +1,31 @@
 
 // queue (priority queue) for critical population species monitoring
 
+import { Heap } from 'heap-js';
+
 class CriticalPopulation {
     constructor() {
-        this.queue = [];
+        this.queue = new Heap((a, b) => a.population - b.population);
     }
+    enqueue(species) {  this.queue.push(species); }
+    
+    dequeue() {  return this.queue.pop(); }
 
-    enqueue(species) {
-        this.queue.push(species);
-        this.queue.sort((a, b) => a.population - b.population); // sort by population ascending
-    }
+    peek() { return this.queue.peek();   }
 
-    dequeue() {
-        return this.queue.shift();
-    }
+    isEmpty() {return this.queue.isEmpty(); }
 
-    peek() {
-        return this.queue[0];
-    }
-
-    isEmpty() {
-        return this.queue.length === 0;
-    }
-
-    getAll() {
-        return this.queue;
-    }
+    getAll() {return this.queue.toArray(); }
 
     getCriticalSpecies(threshold=2) {
-
-        if(this.isEmpty()){
-            return ;
-        }
-
-        let level = 0 ;
-        let criticalSpeciesList = [] ;
-        let iter = 0;
-        while(level<= threshold){
-            const curr = this.queue[iter];
-            criticalSpeciesList.push(curr);
-            level = (curr.speciesType=='Animal') ? curr.healthStatus : curr.growthStage ;
-            iter++;
-            
-        }
-        return criticalSpeciesList;
+        if(this.isEmpty())return ;
+        return this.getAll().filter( s => s.population <= threshold)
     }
 
     updateSpecies(species) {
         this.queue = this.queue.filter(s => s.name.toLowerCase() !== species.name.toLowerCase() );
         this.enqueue(species);
     }
-
 
     giveAlert(){
         if(this.isEmpty()){

@@ -16,36 +16,38 @@ Priority levels:
 # P0 — Critical Fixes (Stability & Correctness)
 
 ## Priority Queue
-- [ ] Replace array-based queue with **Min Heap Priority Queue**
-- [ ] Implement `enqueue()`
-- [ ] Implement `dequeue()`
-- [ ] Implement `peek()`
-- [ ] Implement `removeSpecies(name)`
-- [ ] Implement `updateSpecies(species)`
+- [x] Replace array-based queue with **Min Heap Priority Queue** (used heap-js)
+- [x] Implement `enqueue()`
+- [x] Implement `dequeue()`
+- [x] Implement `peek()`
+- [x] Implement `removeSpecies(name)`
+- [x] Implement `updateSpecies(species)`
 - [ ] Ensure queue automatically updates when population changes
 
 ## Case Sensitivity
-- [ ] Standardize all species keys to lowercase
+- [x] Standardize all species keys to lowercase
 - [ ] Enforce lowercase in:
-  - Storage.js
-  - FoodChain.js
-  - CriticalPopulation.js
-  - Simulation.js
+- - [x]~~Storage.js~~ (using mongodb)
+- - [x]FoodChain.js
+- - [x]CriticalPopulation.js
+- - [x]Simulation.js
 
 ## Graph Synchronization
-- [ ] Rebuild FoodChain graph from localStorage on page load
-- [ ] Rebuild CriticalPopulation queue from storage
-- [ ] Prevent duplicate nodes in graph
+- [x] ~~Rebuild FoodChain graph from localStorage on page load~~
+- [ ] Rebuild FoodChain graph from mongodb from memory on page load
+- [x] ~~Rebuild CriticalPopulation queue from storage~~
+- [x] Prevent duplicate nodes in graph
 
 ## Validation
 Create `SpeciesValidator.js`
 
-- [ ] Validate species name
-- [ ] Prevent empty names
-- [ ] Prevent negative populations
-- [ ] Prevent negative age
-- [ ] Ensure animals have prey
-- [ ] Validate prey species exist
+- [x] Validate species name
+- [x] Prevent empty names
+- [x] Prevent negative populations
+- [x] Prevent negative age
+- [ ] ~~Ensure animals have prey~~ ( depends on species type so not needed )
+- [ ] ~~Validate prey species exist~~ ( not really needed can add dropbox toggle list instead)
+- [ ] add dropbox toggle list at time of adding prey in animals
 
 ---
 
@@ -70,9 +72,9 @@ Create `SpeciesValidator.js`
 
 ### Tasks
 
-- [ ] Create `EcosystemService.js`
+- [ ]~~ Create `EcosystemService.js`~~ ( seperate client and server layer)
 - [ ] Move all ecosystem logic into service layer
-- [ ] UI should call only service methods
+- [x] UI should call only service methods ( already frontend is isolated)
 
 Example:
 - ecosystemService.addSpecies(data)
@@ -94,11 +96,11 @@ Tech stack suggestion:
 
 Endpoints:
 
-- [ ] `GET /species`
-- [ ] `POST /species`
-- [ ] `DELETE /species/:id`
-- [ ] `PUT /species/:id`
-- [ ] `GET /foodchain`
+- [x] `GET /species`
+- [x] `POST /species`
+- [x] `DELETE /species/:id`
+- [x] `PUT /species/:id`
+- [x] `GET /foodchain`
 
 ---
 
@@ -284,7 +286,7 @@ Display:
 
 Tasks:
 
-- [ ] Implement info modal
+- [ ] Implement info modal on each Node 
 
 ---
 
@@ -292,7 +294,7 @@ Tasks:
 
 - [ ] Highlight keystone species in graph
 - [ ] Color nodes by ecosystem importance
-
+- [ ] a small (info) toggle for color info
 ---
 
 ## Collapse Visualization
@@ -301,6 +303,7 @@ When species removed:
 
 - [ ] animate cascading population changes
 - [ ] visualize extinction chain
+- [ ] that graph physics like nodes floating in space ( ekagra )
 
 ---
 
@@ -357,8 +360,6 @@ Setup testing framework.
 
 Suggested:
 - Vitest
-
-
 
 Test coverage:
 
