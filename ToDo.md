@@ -26,11 +26,11 @@ Priority levels:
 
 ## Case Sensitivity
 - [x] Standardize all species keys to lowercase
-- [ ] Enforce lowercase in:
-- - [x]~~Storage.js~~ (using mongodb)
-- - [x]FoodChain.js
-- - [x]CriticalPopulation.js
-- - [x]Simulation.js
+- [x] Enforce lowercase in:
+- [x] ~~Storage.js~~ (using mongodb)
+- [x] FoodChain.js
+- [x] CriticalPopulation.js
+- [x] Simulation.js
 
 ## Graph Synchronization
 - [x] ~~Rebuild FoodChain graph from localStorage on page load~~

@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # 🌿 EcoTrack - Ecosystem Management System
 
 An interactive web application for managing ecosystems, tracking species populations, and visualizing food chains using fundamental data structures.
