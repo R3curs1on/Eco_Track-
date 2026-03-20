@@ -41,7 +41,8 @@ npm install
 
 2. Start development server:
 ```bash
-npm run dev
+# npm run dev
+npm run dev:full
 ```
 
 3. Open browser to `http://localhost:3000`
@@ -49,8 +50,9 @@ npm run dev
 ### Build for Production
 
 ```bash
-npm run build
-npm run preview
+# npm run build
+# npm run preview
+npm run dev:full
 ```
 
 ## 📖 Usage

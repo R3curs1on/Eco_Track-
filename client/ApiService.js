@@ -1,10 +1,10 @@
 
-const BASE_URL = '/api';
+const BASE_URL = '/api/species';
 
 const ApiService = {
     async getSpecies() {
         try {
-            const response = await fetch(`${BASE_URL}/species`);
+            const response = await fetch(`${BASE_URL}`);
             if (!response.ok) {
                 throw new Error('Failed to fetch species data');
             }
@@ -18,7 +18,7 @@ const ApiService = {
 
     async getSpeciesByName(name) {
         try{
-            const response = await fetch(`${BASE_URL}/species/${name}`,
+            const response = await fetch(`${BASE_URL}/${encodeURIComponent(name)}`,
                 {
                     method: 'GET',
                     headers: { 'Content-Type': 'application/json' }
@@ -37,7 +37,7 @@ const ApiService = {
 
     async addSpecies(speciesData) {
         try{
-            const response = await fetch(`${BASE_URL}/species/`,
+            const response = await fetch(`${BASE_URL}`,
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -57,7 +57,7 @@ const ApiService = {
 
     async removeSpecies(name) {
         try{
-            const response = await fetch(`${BASE_URL}/species/`,
+            const response = await fetch(`${BASE_URL}/${encodeURIComponent(name)}`,
                 {
                     method: 'DELETE',
                     headers: { 'Content-Type': 'application/json' },
@@ -77,11 +77,10 @@ const ApiService = {
 
     async updateSpecies(name, updateData) {
         try{
-            const response = await fetch(`${BASE_URL}/species/`,
+            const response = await fetch(`${BASE_URL}/${encodeURIComponent(name)}`,
                 {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    name : JSON.stringify({ name }),
                     body : JSON.stringify(updateData)
                 }
             );

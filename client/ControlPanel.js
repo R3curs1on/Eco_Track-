@@ -2,6 +2,7 @@ import Storage from '../Storage.js';
 import CriticalPopulation from './CriticalPopulation.js';
 import { FoodChain } from '../FoodChain.js';
 import { Animal, Plant } from './Species.js'; 
+import ApiService from './ApiService.js';
 const storage = new Storage();
 const criticalPopulation = new CriticalPopulation();
 const foodChain = new FoodChain();
