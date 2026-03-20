@@ -19,8 +19,12 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "cors": "^2.8.6",
     "cytoscape": "^3.33.1",
-    "graphlib": "^2.1.8"
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "graphlib": "^2.1.8",
+    "mongoose": "^9.3.1"
   },
   "devDependencies": {
     "vite": "^5.0.0"
