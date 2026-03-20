@@ -106,8 +106,8 @@ Endpoints:
 
 ## Data Persistence
 
-- [ ] Replace localStorage persistence
-- [ ] Implement API data fetching
+- [x] Replace localStorage persistence
+- [x] Implement API data fetching
 - [ ] Add error handling for network failures
 
 ---

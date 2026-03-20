@@ -17,7 +17,8 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeDOM();
     setupEventListeners();
     console.log('DOM loaded, initializing app... loading optios ');
-    loadSampleData(); 
+    // loadSampleData(); 
+    loadFromDatabase();
 });
 
 
@@ -160,50 +161,88 @@ function showNotification(message, type = 'success') {
 }
 
 
-function loadSampleData() {
-    const saved = localStorage.getItem('ecotrack-species');
-    if (saved && saved !== '[]') {
-        console.log('Using existing data from localStorage');
+// function loadSampleData() {
+//     const saved = localStorage.getItem('ecotrack-species');
+//     if (saved && saved !== '[]') {
+//         console.log('Using existing data from localStorage');
         
-        // Clear existing foodChain and criticalPopulation
-        // They may have stale data
-        storage.getAllSpecies().forEach(species => {
-            foodChain.addSpecies(species);
-            if (species.population < 30) {
-                criticalPopulation.enqueue(species);
-            }
-        });
-        updateSpeciesSelect();
-        showNotification('Loaded existing ecosystem data');
-        return;
-    }
-    // Sample plants
-    const grass = new Plant('grass', 'Producer', 'Grassland', 500, 'mature', 2);
-        const berryBush = new Plant('berry bush', 'Producer', 'Forest', 200, 'fruiting', 5);
-        const oak = new Plant('oak tree', 'Producer', 'Forest', 150, 'mature', 50);
+//         // Clear existing foodChain and criticalPopulation
+//         // They may have stale data
+//         storage.getAllSpecies().forEach(species => {
+//             foodChain.addSpecies(species);
+//             if (species.population < 30) {
+//                 criticalPopulation.enqueue(species);
+//             }
+//         });
+//         updateSpeciesSelect();
+//         showNotification('Loaded existing ecosystem data');
+//         return;
+//     }
+//     // Sample plants
+//     const grass = new Plant('grass', 'Producer', 'Grassland', 500, 'mature', 2);
+//         const berryBush = new Plant('berry bush', 'Producer', 'Forest', 200, 'fruiting', 5);
+//         const oak = new Plant('oak tree', 'Producer', 'Forest', 150, 'mature', 50);
         
-        [grass, berryBush, oak].forEach(plant => {
-            storage.addSpecies(plant);
-            foodChain.addSpecies(plant);
-        });
+//         [grass, berryBush, oak].forEach(plant => {
+//             storage.addSpecies(plant);
+//             foodChain.addSpecies(plant);
+//         });
         
-        // Sample animals
-        const rabbit = new Animal('rabbit', 'Herbivore', 'Grassland', 120, 'healthy', 3, ['grass', 'berry bush']);
-        const deer = new Animal('deer', 'Herbivore', 'Forest', 80, 'healthy', 5, ['grass', 'berry bush', 'oak tree']);
-        const fox = new Animal('fox', 'Carnivore', 'Forest', 25, 'critical', 4, ['rabbit']);
-        const wolf = new Animal('wolf', 'Carnivore', 'Forest', 15, 'critical', 6, ['rabbit', 'deer']);
-        const hawk = new Animal('hawk', 'Carnivore', 'Sky', 20, 'critical', 3, ['rabbit']);
+//         // Sample animals
+//         const rabbit = new Animal('rabbit', 'Herbivore', 'Grassland', 120, 'healthy', 3, ['grass', 'berry bush']);
+//         const deer = new Animal('deer', 'Herbivore', 'Forest', 80, 'healthy', 5, ['grass', 'berry bush', 'oak tree']);
+//         const fox = new Animal('fox', 'Carnivore', 'Forest', 25, 'critical', 4, ['rabbit']);
+//         const wolf = new Animal('wolf', 'Carnivore', 'Forest', 15, 'critical', 6, ['rabbit', 'deer']);
+//         const hawk = new Animal('hawk', 'Carnivore', 'Sky', 20, 'critical', 3, ['rabbit']);
         
-        [rabbit, deer, fox, wolf, hawk].forEach(animal => {
-            storage.addSpecies(animal);
-            foodChain.addSpecies(animal);
-            if (animal.population < 30) {
-                criticalPopulation.enqueue(animal);
-            }
-        });
+//         [rabbit, deer, fox, wolf, hawk].forEach(animal => {
+//             storage.addSpecies(animal);
+//             foodChain.addSpecies(animal);
+//             if (animal.population < 30) {
+//                 criticalPopulation.enqueue(animal);
+//             }
+//         });
     
-    updateSpeciesSelect();
-    showNotification('Sample ecosystem data loaded');
+//     updateSpeciesSelect();
+//     showNotification('Sample ecosystem data loaded');
+// }
+
+// Replace loadSampleData() with:
+async function loadFromDatabase() {
+  try {
+    const speciesList = await ApiService.getAllSpecies();  // fetch from MongoDB
+
+    if (speciesList.length === 0) {
+      await seedSampleData();   // only seed if DB is empty
+      return;
+    }
+
+    // Rebuild in-memory graph from DB data
+    speciesList.forEach(data => {
+      let species;
+      if (data.eats) {
+        species = new Animal(
+          data.name, data.speciesType, data.habitat,
+          data.population, data.healthStatus, data.age,
+          data.eats.split(',').map(s => s.trim())
+        );
+      } else {
+        species = new Plant(
+          data.name, data.speciesType, data.habitat,
+          data.population, data.growthStage, data.age
+        );
+      }
+      foodChain.addSpecies(species);       // rebuild graph
+      if (species.population < 30) {
+        criticalPopulation.enqueue(species); // rebuild queue
+      }
+    });
+
+    updateDashboard();
+    showNotification('Ecosystem loaded from database');
+  } catch (err) {
+    showNotification('Failed to load data: ' + err.message, 'error');
+  }
 }
 
 // Export for debugging

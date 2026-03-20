@@ -2,8 +2,7 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import cors from 'cors';
 import mongoose from 'mongoose';
-import speciesRoutes from './routes/species.js';
-import foodChainRoutes from './routes/foodchain.js';
+import speciesRoutes from './routes/species.js'; 
 
 
 const PORT = 5000;
@@ -40,6 +39,3 @@ app.get("/control-panel", (req,res)=>{
 });
 
 app.use('/api/species', speciesRoutes);
-app.use('/api/food-chain', foodChainRoutes);
-
-

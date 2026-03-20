@@ -12,7 +12,8 @@ let animalForm, plantForm , removeAnimalForm, removePlantForm ;
 document.addEventListener('DOMContentLoaded', () => {
     initializeDOM();
     setupEventListeners();
-    loadSampleData(); 
+    // loadSampleData(); 
+    loadFromDatabase();
 });
 
 
@@ -85,57 +86,91 @@ function toggleForm(type) {
 
 }
 
-function handleAnimalSubmit(e) {
+async function handleAnimalSubmit(e) {
     e.preventDefault();
     const formData = new FormData(e.target);
     
-    const name = formData.get('animal-name');
-    const speciesType = formData.get('animal-type');
-    const habitat = formData.get('animal-habitat');
-    const population = parseInt(formData.get('animal-population'));
-    const healthStatus = formData.get('animal-health');
-    const age = parseInt(formData.get('animal-age'));
-    const eatsRaw = formData.get('animal-eats');
-    const eats = eatsRaw.split(',').map(item => item.trim()).filter(item => item);
-    
-    const animal = new Animal(name, speciesType, habitat, population, healthStatus, age, eats);
-    
-    storage.addSpecies(animal);
-    foodChain.addSpecies(animal);
-    
-    if (population < 30 || healthStatus.toLowerCase() === 'critical') {
-        criticalPopulation.enqueue(animal);
+    const animalData = { 
+     name : formData.get('animal-name'),
+     speciesType : formData.get('animal-type'),
+     habitat : formData.get('animal-habitat'),
+     population :parseInt(formData.get('animal-population')),
+     healthStatus : formData.get('animal-health'),
+     age : parseInt(formData.get('animal-age')),
+     eats : formData.get('animal-eats').split(',').map(item => item.trim()).filter(item => item),
     }
     
-    e.target.reset();
-    animalForm.style.display = 'none';  
-    showNotification(`Animal "${name}" added successfully!`);
+    try {
+        await ApiService.addSpecies(animalData);   // ← save to MongoDB
+        foodChain.addSpecies(new Animal(           // ← update local graph
+          animalData.name, animalData.speciesType,
+          animalData.habitat, animalData.population,
+          animalData.healthStatus, animalData.age,
+          animalData.eats
+        ));
+         e.target.reset();
+         animalForm.style.display = 'none';  
+        if (population < 30 || healthStatus.toLowerCase() === 'critical') {
+            criticalPopulation.enqueue(animal);
+         }
+
+        showNotification(`Animal "${animalData.name}" added!`);
+    } catch (err) {
+        showNotification(err.message, 'error');
+    }
+
 }
 
-function handlePlantSubmit(e) {
+async function handlePlantSubmit(e) {
     e.preventDefault();
     const formData = new FormData(e.target);
     
-    const name = formData.get('plant-name');
-    const speciesType = formData.get('plant-type');
-    const habitat = formData.get('plant-habitat');
-    const population = parseInt(formData.get('plant-population'));
-    const growthStage = formData.get('plant-growth');
-    const age = parseInt(formData.get('plant-age'));
-    
-    const plant = new Plant(name, speciesType, habitat, population, growthStage, age);
-    
-    storage.addSpecies(plant);
-    foodChain.addSpecies(plant);
-    
-    if (population < 30 || growthStage.toLowerCase() === 'dying') {
-        criticalPopulation.enqueue(plant);
+    const plantData = {
+     name : formData.get('plant-name'),
+     speciesType : formData.get('plant-type'),
+     habitat : formData.get('plant-habitat'),
+     population :parseInt(formData.get('plant-population')),
+     growthStage : formData.get('plant-growth'),
+     age : parseInt(formData.get('plant-age'))
     }
     
-    e.target.reset();
-    plantForm.style.display = 'none';
+    try {
+        await ApiService.addSpecies(plantData);   // ← save to MongoDB
+        foodChain.addSpecies(new Plant(           // ← update local graph
+          plantData.name, plantData.speciesType,
+          plantData.habitat, plantData.population,
+          plantData.growthStage, plantData.age
+        ));
+         e.target.reset();
+         plantForm.style.display = 'none';  
+        if (population < 30 || growthStage.toLowerCase() === 'dying') {
+            criticalPopulation.enqueue(plant);
+         }
+
+        showNotification(`Plant "${plantData.name}" added!`);
+    } catch (err) {
+        showNotification(err.message, 'error');
+    }   
+
+    // const name = formData.get('plant-name');
+    // const speciesType = formData.get('plant-type');
+    // const habitat = formData.get('plant-habitat');
+    // const population = parseInt(formData.get('plant-population'));
+    // const growthStage = formData.get('plant-growth');
+    // const age = parseInt(formData.get('plant-age'));
+    
+    // const plant = new Plant(name, speciesType, habitat, population, growthStage, age);
+    
+    // storage.addSpecies(plant);
+    // foodChain.addSpecies(plant);
+    
+    // if (population < 30 || growthStage.toLowerCase() === 'dying') {
+    //     criticalPopulation.enqueue(plant);
+    // }
+    // e.target.reset();
+    // plantForm.style.display = 'none';
      
-    showNotification(`Plant "${name}" added successfully!`);
+    // showNotification(`Plant "${name}" added successfully!`);
 }
 function handleRemoveAnimalSubmit(e) {
     e.preventDefault();
@@ -209,48 +244,86 @@ function showNotification(message, type = 'success') {
 }
 
 
-function loadSampleData() {
-    const saved = localStorage.getItem('ecotrack-species');
-    if (saved && saved !== '[]') {
-        console.log('Using existing data from localStorage');
+// function loadSampleData() {
+//     const saved = localStorage.getItem('ecotrack-species');
+//     if (saved && saved !== '[]') {
+//         console.log('Using existing data from localStorage');
         
-        // Clear existing foodChain and criticalPopulation
-        // They may have stale data
-        storage.getAllSpecies().forEach(species => {
-            foodChain.addSpecies(species);
-            if (species.population < 30) {
-                criticalPopulation.enqueue(species);
-            }
-        });
+//         // Clear existing foodChain and criticalPopulation
+//         // They may have stale data
+//         storage.getAllSpecies().forEach(species => {
+//             foodChain.addSpecies(species);
+//             if (species.population < 30) {
+//                 criticalPopulation.enqueue(species);
+//             }
+//         });
         
-        showNotification('Loaded existing ecosystem data');
-        return;
-    }
+//         showNotification('Loaded existing ecosystem data');
+//         return;
+//     }
     
-    const grass = new Plant('grass', 'Producer', 'Grassland', 500, 'mature', 2);
-        const berryBush = new Plant('berry bush', 'Producer', 'Forest', 200, 'fruiting', 5);
-        const oak = new Plant('oak tree', 'Producer', 'Forest', 150, 'mature', 50);
+//     const grass = new Plant('grass', 'Producer', 'Grassland', 500, 'mature', 2);
+//         const berryBush = new Plant('berry bush', 'Producer', 'Forest', 200, 'fruiting', 5);
+//         const oak = new Plant('oak tree', 'Producer', 'Forest', 150, 'mature', 50);
         
-        [grass, berryBush, oak].forEach(plant => {
-            storage.addSpecies(plant);
-            foodChain.addSpecies(plant);
-        });
+//         [grass, berryBush, oak].forEach(plant => {
+//             storage.addSpecies(plant);
+//             foodChain.addSpecies(plant);
+//         });
          
-        const rabbit = new Animal('rabbit', 'Herbivore', 'Grassland', 120, 'healthy', 3, ['grass', 'berry bush']);
-        const deer = new Animal('deer', 'Herbivore', 'Forest', 80, 'healthy', 5, ['grass', 'berry bush', 'oak tree']);
-        const fox = new Animal('fox', 'Carnivore', 'Forest', 25, 'critical', 4, ['rabbit']);
-        const wolf = new Animal('wolf', 'Carnivore', 'Forest', 15, 'critical', 6, ['rabbit', 'deer']);
-        const hawk = new Animal('hawk', 'Carnivore', 'Sky', 20, 'critical', 3, ['rabbit']);
+//         const rabbit = new Animal('rabbit', 'Herbivore', 'Grassland', 120, 'healthy', 3, ['grass', 'berry bush']);
+//         const deer = new Animal('deer', 'Herbivore', 'Forest', 80, 'healthy', 5, ['grass', 'berry bush', 'oak tree']);
+//         const fox = new Animal('fox', 'Carnivore', 'Forest', 25, 'critical', 4, ['rabbit']);
+//         const wolf = new Animal('wolf', 'Carnivore', 'Forest', 15, 'critical', 6, ['rabbit', 'deer']);
+//         const hawk = new Animal('hawk', 'Carnivore', 'Sky', 20, 'critical', 3, ['rabbit']);
         
-        [rabbit, deer, fox, wolf, hawk].forEach(animal => {
-            storage.addSpecies(animal);
-            foodChain.addSpecies(animal);
-            if (animal.population < 30) {
-                criticalPopulation.enqueue(animal);
-            }
-        });
+//         [rabbit, deer, fox, wolf, hawk].forEach(animal => {
+//             storage.addSpecies(animal);
+//             foodChain.addSpecies(animal);
+//             if (animal.population < 30) {
+//                 criticalPopulation.enqueue(animal);
+//             }
+//         });
      
-    showNotification('Sample ecosystem data loaded');
+//     showNotification('Sample ecosystem data loaded');
+// }
+// Replace loadSampleData() with:
+
+async function loadFromDatabase() {
+  try {
+    const speciesList = await ApiService.getAllSpecies();  // fetch from MongoDB
+
+    if (speciesList.length === 0) {
+      await seedSampleData();   // only seed if DB is empty
+      return;
+    }
+
+    // Rebuild in-memory graph from DB data
+    speciesList.forEach(data => {
+      let species;
+      if (data.eats) {
+        species = new Animal(
+          data.name, data.speciesType, data.habitat,
+          data.population, data.healthStatus, data.age,
+          data.eats.split(',').map(s => s.trim())
+        );
+      } else {
+        species = new Plant(
+          data.name, data.speciesType, data.habitat,
+          data.population, data.growthStage, data.age
+        );
+      }
+      foodChain.addSpecies(species);       // rebuild graph
+      if (species.population < 30) {
+        criticalPopulation.enqueue(species); // rebuild queue
+      }
+    });
+
+    updateDashboard();
+    showNotification('Ecosystem loaded from database');
+  } catch (err) {
+    showNotification('Failed to load data: ' + err.message, 'error');
+  }
 }
  
 window.ecoTrack = {
