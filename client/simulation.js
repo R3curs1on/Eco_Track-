@@ -1,10 +1,17 @@
-import Storage from '../Storage.js';
-import CriticalPopulation from './CriticalPopulation.js';
-import { FoodChain } from '../FoodChain.js';
-import { Animal, Plant } from './Species.js';
-import { renderCytoScape } from './RenderCytoscape.js'; 
+// import Storage from '../Storage.js';
+// import CriticalPopulation from './CriticalPopulation.js';
+// import { FoodChain } from '../FoodChain.js';
+// import { Animal, Plant } from './Species.js';
+// import { renderCytoScape } from './RenderCytoscape.js'; 
+// import ApiService from './ApiService.js';
 
-const storage = new Storage();
+import CriticalPopulation from './CriticalPopulation.js';
+import { FoodChain } from './FoodChain.js'; // fixed
+import { Animal, Plant } from './Species.js';
+import { renderCytoScape } from './RenderCytoscape.js';
+import ApiService from './ApiService.js';
+
+// const storage = new Storage();
 const criticalPopulation = new CriticalPopulation();
 const foodChain = new FoodChain();
 
@@ -38,16 +45,38 @@ function setupEventListeners() {
 }
 
 
-function updateSpeciesSelect() {
-    const allSpecies = storage.getAllSpecies();
-    speciesSelect.innerHTML = '<option value="">-- Select Species --</option>';
+async function updateSpeciesSelect() {
+    // const allSpecies = storage.getAllSpecies();
+    // speciesSelect.innerHTML = '<option value="">-- Select Species --</option>';
     
-    allSpecies.forEach(species => {
-        const option = document.createElement('option');
-        option.value = species.name;
-        option.textContent = `${species.name} (${species.speciesType})`;
-        speciesSelect.appendChild(option);
-    });
+    // allSpecies.forEach(species => {
+    //     const option = document.createElement('option');
+    //     option.value = species.name;
+    //     option.textContent = `${species.name} (${species.speciesType})`;
+    //     speciesSelect.appendChild(option);
+    // });
+
+    try {
+        const allSpecies = await ApiService.getAllSpecies();  // fetch from MongoDB
+        if (allSpecies.length === 0) {
+          await seedSampleData();   // only seed if DB is empty
+          return;
+        }
+
+        speciesSelect.innerHTML = '<option value="">-- Select Species --</option>';
+
+        // Rebuild in-memory graph from DB data
+        allSpecies.forEach(species => {
+            const option = document.createElement('option');
+            option.value = species.name;
+            option.textContent = `${species.name} (${species.speciesType})`;
+            speciesSelect.appendChild(option);
+        });
+
+  } catch (err) {
+    showNotification('Failed to load data: ' + err.message, 'error');
+  }
+
 }
 
 
@@ -208,6 +237,38 @@ function showNotification(message, type = 'success') {
 // }
 
 // Replace loadSampleData() with:
+// ...existing code...
+async function seedSampleData() {
+  const samples = [
+    { name: 'grass', speciesType: 'Producer', habitat: 'Grassland', population: 500, growthStage: 'mature', age: 2 },
+    { name: 'berry bush', speciesType: 'Producer', habitat: 'Forest', population: 200, growthStage: 'fruiting', age: 5 },
+    { name: 'oak tree', speciesType: 'Producer', habitat: 'Forest', population: 150, growthStage: 'mature', age: 50 },
+    { name: 'rabbit', speciesType: 'Herbivore', habitat: 'Grassland', population: 120, healthStatus: 'healthy', age: 3, eats: ['grass', 'berry bush'] },
+    { name: 'deer', speciesType: 'Herbivore', habitat: 'Forest', population: 80, healthStatus: 'healthy', age: 5, eats: ['grass', 'berry bush', 'oak tree'] },
+    { name: 'fox', speciesType: 'Carnivore', habitat: 'Forest', population: 25, healthStatus: 'critical', age: 4, eats: ['rabbit'] },
+    { name: 'wolf', speciesType: 'Carnivore', habitat: 'Forest', population: 15, healthStatus: 'critical', age: 6, eats: ['rabbit', 'deer'] },
+    { name: 'hawk', speciesType: 'Carnivore', habitat: 'Sky', population: 20, healthStatus: 'critical', age: 3, eats: ['rabbit'] }
+  ];
+
+  for (const s of samples) {
+    try {
+      await ApiService.addSpecies(s);
+      let species;
+      if (s.eats) {
+        species = new Animal(s.name, s.speciesType, s.habitat, s.population, s.healthStatus, s.age, s.eats);
+      } else {
+        species = new Plant(s.name, s.speciesType, s.habitat, s.population, s.growthStage, s.age);
+      }
+      foodChain.addSpecies(species);
+      if (s.population < 30) criticalPopulation.enqueue(species);
+    } catch (e) {
+      console.error(`Failed to seed ${s.name}:`, e);
+    }
+  }
+  updateSpeciesSelect();
+  showNotification('Sample data seeded');
+}
+
 async function loadFromDatabase() {
   try {
     const speciesList = await ApiService.getAllSpecies();  // fetch from MongoDB
@@ -224,7 +285,7 @@ async function loadFromDatabase() {
         species = new Animal(
           data.name, data.speciesType, data.habitat,
           data.population, data.healthStatus, data.age,
-          data.eats.split(',').map(s => s.trim())
+          data.eats 
         );
       } else {
         species = new Plant(
@@ -237,8 +298,9 @@ async function loadFromDatabase() {
         criticalPopulation.enqueue(species); // rebuild queue
       }
     });
-
-    updateDashboard();
+    
+    updateSpeciesSelect();
+    // updateDashboard();
     showNotification('Ecosystem loaded from database');
   } catch (err) {
     showNotification('Failed to load data: ' + err.message, 'error');
@@ -247,14 +309,7 @@ async function loadFromDatabase() {
 
 // Export for debugging
 window.ecoTrack = {
-    storage,
-    criticalPopulation,
-    foodChain,
-    visualizeFoodChain
-};
-
-window.ecoTrack = {
-    storage,
+    // storage,
     criticalPopulation,
     foodChain,
     visualizeFoodChain

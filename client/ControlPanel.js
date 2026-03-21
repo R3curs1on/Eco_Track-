@@ -1,9 +1,9 @@
-import Storage from '../Storage.js';
+// import Storage from '../Storage.js';
 import CriticalPopulation from './CriticalPopulation.js';
-import { FoodChain } from '../FoodChain.js';
+import { FoodChain } from './FoodChain.js';
 import { Animal, Plant } from './Species.js'; 
 import ApiService from './ApiService.js';
-const storage = new Storage();
+// const storage = new Storage();
 const criticalPopulation = new CriticalPopulation();
 const foodChain = new FoodChain();
 
@@ -47,8 +47,7 @@ function setupEventListeners() {
 
 }
 
-
-function toggleForm(type) {
+async function toggleForm(type) {
     if (type === 'animal') {
         animalForm.style.display = animalForm.style.display === 'none' ? 'block' : 'none';
         plantForm.style.display = 'none';
@@ -61,13 +60,26 @@ function toggleForm(type) {
         removePlantForm.style.display = 'none';
         let removeOption = document.getElementById('remove-animal-name');
         removeOption.innerHTML = '<option value="">-- Select --</option>';
+        
+        try {
+            const allSpecies = await ApiService.getAllSpecies();  // fetch from MongoDB
+            if (allSpecies.length === 0) {
+                return;
+            }
 
-        storage.getAllSpecies().filter(s => s instanceof Animal).forEach(animal => {
-            const option = document.createElement('option');
-            option.value = animal.name;
-            option.textContent = animal.name;
-            removeOption.appendChild(option);
-        });
+            allSpecies
+            .filter(s => s.eats && Array.isArray(s.eats) )
+            .forEach(animal => {
+                const option = document.createElement('option');
+                option.value = animal.name;
+                option.textContent = animal.name;
+                removeOption.appendChild(option);
+            });
+
+        }
+        catch(err){
+            console.log(' error removing animal '+err.message);
+        }
 
     }   
     else if (type === 'remove-plant') {
@@ -76,12 +88,28 @@ function toggleForm(type) {
         let removeOption = document.getElementById('remove-plant-name');
         removeOption.innerHTML = '<option value="">-- Select --</option>';
         
-        storage.getAllSpecies().filter(s => s instanceof Plant).forEach(plant => {
-            const option = document.createElement('option');
-            option.value = plant.name;
-            option.textContent = plant.name;
-            removeOption.appendChild(option);
-        });
+         try {
+            const allSpecies = await ApiService.getAllSpecies();  // fetch from MongoDB
+            if (allSpecies.length === 0) {
+                // await seedSampleData();   // only seed if DB is empty
+                return;
+            }
+
+        // const allSpecies = storage.getAllSpecies();
+
+            allSpecies
+            .filter(s => !s.eats && !Array.isArray(s.eats) === false )
+            .forEach(plant => {
+                const option = document.createElement('option');
+                option.value = plant.name;
+                option.textContent = plant.name;
+                removeOption.appendChild(option);
+            });
+
+        }
+        catch(err){
+            console.log(' error removing animal '+err.message);
+        }
 
     }
 
@@ -103,18 +131,20 @@ async function handleAnimalSubmit(e) {
     
     try {
         await ApiService.addSpecies(animalData);   // ← save to MongoDB
-        foodChain.addSpecies(new Animal(           // ← update local graph
+        const animal = new Animal(           // ← update local graph
           animalData.name, animalData.speciesType,
           animalData.habitat, animalData.population,
           animalData.healthStatus, animalData.age,
           animalData.eats
-        ));
-         e.target.reset();
-         animalForm.style.display = 'none';  
-        if (population < 30 || healthStatus.toLowerCase() === 'critical') {
+        );
+        foodChain.addSpecies(animal);
+
+        if (animalData.population < 30 || animalData.healthStatus.toLowerCase() === 'critical') {
             criticalPopulation.enqueue(animal);
          }
 
+         e.target.reset();
+         animalForm.style.display = 'none';  
         showNotification(`Animal "${animalData.name}" added!`);
     } catch (err) {
         showNotification(err.message, 'error');
@@ -137,17 +167,19 @@ async function handlePlantSubmit(e) {
     
     try {
         await ApiService.addSpecies(plantData);   // ← save to MongoDB
-        foodChain.addSpecies(new Plant(           // ← update local graph
+        const plant  = new Plant(           // ← update local graph
           plantData.name, plantData.speciesType,
           plantData.habitat, plantData.population,
           plantData.growthStage, plantData.age
-        ));
-         e.target.reset();
-         plantForm.style.display = 'none';  
-        if (population < 30 || growthStage.toLowerCase() === 'dying') {
+        );
+        foodChain.addSpecies(plant);
+
+        if (plantData.population < 30 || plantData.growthStage.toLowerCase() === 'dying') {
             criticalPopulation.enqueue(plant);
          }
 
+         e.target.reset();
+         plantForm.style.display = 'none';  
         showNotification(`Plant "${plantData.name}" added!`);
     } catch (err) {
         showNotification(err.message, 'error');
@@ -173,7 +205,7 @@ async function handlePlantSubmit(e) {
      
     // showNotification(`Plant "${name}" added successfully!`);
 }
-function handleRemoveAnimalSubmit(e) {
+async function handleRemoveAnimalSubmit(e) {
     e.preventDefault();
     
     const formData = new FormData(e.target);
@@ -184,23 +216,37 @@ function handleRemoveAnimalSubmit(e) {
         return;
     }
     
-    const species = storage.getSpecies(name);
-    if (!species) {
-        showNotification(`Animal "${name}" not found`, 'error');
-        return;
+    // const species = storage.getSpecies(name);
+
+    try {
+        const remove = await ApiService.removeSpecies(name) ; 
+        foodChain.removeSpecies(name);
+        criticalPopulation.removeSpecies(name);
+        
+        showNotification(`${name} removed successfully!`);
+        e.target.reset();
+        removeAnimalForm.style.display = 'none';
     }
+    catch(err){
+        console.log('err remove animal submit () '+err.message);
+    }
+
+    // if (!species) {
+    //     showNotification(`Animal "${name}" not found`, 'error');
+    //     return;
+    // }
     
     // Remove from all data structures
-    storage.removeSpecies(name);
-    foodChain.removeSpecies(name);
-    criticalPopulation.removeSpecies(name);
+    // storage.removeSpecies(name);
+    // foodChain.removeSpecies(name);
+    // criticalPopulation.removeSpecies(name);
     
-    showNotification(`${name} removed successfully!`);
-    e.target.reset();
-    removeAnimalForm.style.display = 'none';
+    // showNotification(`${name} removed successfully!`);
+    // e.target.reset();
+    // removeAnimalForm.style.display = 'none';
 }
 
-function handleRemovePlantSubmit(e) {
+async function handleRemovePlantSubmit(e) {
     e.preventDefault();
     
     const formData = new FormData(e.target);
@@ -211,20 +257,36 @@ function handleRemovePlantSubmit(e) {
         return;
     }
     
-    const species = storage.getSpecies(name);
-    if (!species) {
-        showNotification(`Plant "${name}" not found`, 'error');
-        return;
+    // const species = storage.getSpecies(name);
+
+    // if (!species) {
+    //     showNotification(`Plant "${name}" not found`, 'error');
+    //     return;
+    // }
+
+    try {
+        const remove = await ApiService.removeSpecies(name) ; 
+        foodChain.removeSpecies(name);
+        criticalPopulation.removeSpecies(name);
+        
+        showNotification(`${name} removed successfully!`);
+        e.target.reset();
+        removePlantForm.style.display = 'none';
     }
+    catch(err){
+        console.log('err remove animal submit () '+err.message);
+    }
+
+
     
     // Remove from all data structures
-    storage.removeSpecies(name);
-    foodChain.removeSpecies(name);
-    criticalPopulation.removeSpecies(name);
+    // storage.removeSpecies(name);
+    // foodChain.removeSpecies(name);
+    // criticalPopulation.removeSpecies(name);
     
-    showNotification(`${name} removed successfully!`);
-    e.target.reset();
-    removePlantForm.style.display = 'none';
+    // showNotification(`${name} removed successfully!`);
+    // e.target.reset();
+    // removePlantForm.style.display = 'none';
 }
 
 function showNotification(message, type = 'success') {
@@ -289,6 +351,37 @@ function showNotification(message, type = 'success') {
 //     showNotification('Sample ecosystem data loaded');
 // }
 // Replace loadSampleData() with:
+// ...existing code...
+async function seedSampleData() {
+  const samples = [
+    { name: 'grass', speciesType: 'Producer', habitat: 'Grassland', population: 500, growthStage: 'mature', age: 2 },
+    { name: 'berry bush', speciesType: 'Producer', habitat: 'Forest', population: 200, growthStage: 'fruiting', age: 5 },
+    { name: 'oak tree', speciesType: 'Producer', habitat: 'Forest', population: 150, growthStage: 'mature', age: 50 },
+    { name: 'rabbit', speciesType: 'Herbivore', habitat: 'Grassland', population: 120, healthStatus: 'healthy', age: 3, eats: ['grass', 'berry bush'] },
+    { name: 'deer', speciesType: 'Herbivore', habitat: 'Forest', population: 80, healthStatus: 'healthy', age: 5, eats: ['grass', 'berry bush', 'oak tree'] },
+    { name: 'fox', speciesType: 'Carnivore', habitat: 'Forest', population: 25, healthStatus: 'critical', age: 4, eats: ['rabbit'] },
+    { name: 'wolf', speciesType: 'Carnivore', habitat: 'Forest', population: 15, healthStatus: 'critical', age: 6, eats: ['rabbit', 'deer'] },
+    { name: 'hawk', speciesType: 'Carnivore', habitat: 'Sky', population: 20, healthStatus: 'critical', age: 3, eats: ['rabbit'] }
+  ];
+
+  for (const s of samples) {
+    try {
+      await ApiService.addSpecies(s);
+      let species;
+      if (s.eats) {
+        species = new Animal(s.name, s.speciesType, s.habitat, s.population, s.healthStatus, s.age, s.eats);
+      } else {
+        species = new Plant(s.name, s.speciesType, s.habitat, s.population, s.growthStage, s.age);
+      }
+      foodChain.addSpecies(species);
+      if (s.population < 30) criticalPopulation.enqueue(species);
+    } catch (e) {
+      console.error(`Failed to seed ${s.name}:`, e);
+    }
+  }
+  updateSpeciesSelect();
+  showNotification('Sample data seeded');
+}
 
 async function loadFromDatabase() {
   try {
@@ -306,7 +399,7 @@ async function loadFromDatabase() {
         species = new Animal(
           data.name, data.speciesType, data.habitat,
           data.population, data.healthStatus, data.age,
-          data.eats.split(',').map(s => s.trim())
+          data.eats
         );
       } else {
         species = new Plant(
@@ -320,7 +413,7 @@ async function loadFromDatabase() {
       }
     });
 
-    updateDashboard();
+    // updateDashboard();
     showNotification('Ecosystem loaded from database');
   } catch (err) {
     showNotification('Failed to load data: ' + err.message, 'error');
@@ -328,15 +421,7 @@ async function loadFromDatabase() {
 }
  
 window.ecoTrack = {
-    storage,
+    // storage,
     criticalPopulation,
     foodChain, 
 };
-
-window.ecoTrack = {
-    storage,
-    criticalPopulation,
-    foodChain, 
-};
-
-

@@ -6,10 +6,8 @@
   "main": "index.js",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "server": "nodemon server/server.js",
-    "dev:full": "concurrently \"npm run dev\" \"npm run server\""
+    "server": "nodemon --watch server --ext js,mjs,cjs,json server/server.js",
+    "dev:full": "concurrently -k \"npm run server\" \"wait-on tcp:5000 && npm run dev\""
   },
   "keywords": [
     "ecosystem",
@@ -32,6 +30,7 @@
   "devDependencies": {
     "concurrently": "^9.2.1",
     "nodemon": "^3.1.14",
-    "vite": "^5.0.0"
+    "vite": "^5.0.0",
+    "wait-on": "^9.0.4"
   }
 }

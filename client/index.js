@@ -1,12 +1,19 @@
 // Main application entry point
-import Storage from '../Storage.js';
+// // import Storage from '../Storage.js';
+// import CriticalPopulation from './CriticalPopulation.js';
+// import { FoodChain } from '../FoodChain.js';
+// import { Animal, Plant } from './Species.js';
+// import { renderCytoScape } from './RenderCytoscape.js';
+// import ApiService from './ApiService.js';
+
 import CriticalPopulation from './CriticalPopulation.js';
-import { FoodChain } from '../FoodChain.js';
+import { FoodChain } from './FoodChain.js'; // fixed
 import { Animal, Plant } from './Species.js';
 import { renderCytoScape } from './RenderCytoscape.js';
+import ApiService from './ApiService.js';
 
 // Initialize core data structures
-const storage = new Storage();
+// const storage = new Storage();
 const criticalPopulation = new CriticalPopulation();
 const foodChain = new FoodChain();
 
@@ -90,7 +97,7 @@ async function loadFromDatabase() {
         species = new Animal(
           data.name, data.speciesType, data.habitat,
           data.population, data.healthStatus, data.age,
-          data.eats.split(',').map(s => s.trim())
+          data.eats 
         );
       } else {
         species = new Plant(
@@ -107,6 +114,7 @@ async function loadFromDatabase() {
     updateDashboard();
     showNotification('Ecosystem loaded from database');
   } catch (err) {
+    console.log('err caught '+err.message );
     showNotification('Failed to load data: ' + err.message, 'error');
   }
 }
@@ -122,38 +130,77 @@ function setupEventListeners() {
     visualizeBtn.addEventListener('click', visualizeFoodChain); 
 }
     
-function updateDashboard() {
-    const allSpecies = storage.getAllSpecies();
-    
-    let html = '<h3>Species Overview</h3>';
-    html += '<div class="species-grid">';
-    
+async function updateDashboard() {
+    // const allSpecies = storage.getAllSpecies();
+    try{
+        const allSpecies = await ApiService.getAllSpecies();
+        console.log('yes loaded and got some species' + allSpecies.length);
+        if (allSpecies.length === 0) {
+            await seedSampleData();   // only seed if DB is empty
+            return;
+        }
+
+        let html = '<h3>Species Overview</h3>';
+        html += '<div class="species-grid">';
+
+    // Rebuild in-memory graph from DB data
     allSpecies.forEach(species => {
-        const statusClass = species.population === 0 ? 'extinct' : 
-                          species.population < 30 ? 'critical' : 'stable';
-        
-        html += `
-            <div class="species-card ${statusClass}">
-                <h4>${species.name}</h4>
-                <p><strong>Type:</strong> ${species.speciesType}</p>
-                <p><strong>Habitat:</strong> ${species.habitat}</p>
-                <p><strong>Population:</strong> ${species.population}</p>
-                <p><strong>Status:</strong> <span class="status-badge ${statusClass}">${
-                    species.population === 0 ? 'EXTINCT' : 
-                    species.population < 30 ? 'CRITICAL' : 'STABLE'
-                }</span></p>
-            </div>
-        `;
+        const statusClass =  species.population === 0 ? 'extinct' :  species.population < 30 ? 'critical' : 'stable';
+        const populationStage = species.speciesType=='animal' ? species.healthStatus : species.growthStage ;
+            html += `
+                <div class="species-card ${statusClass}">
+                    <h4>${species.name}</h4>
+                    <p><strong>Type:</strong> ${species.speciesType}</p>
+                    <p><strong>Habitat:</strong> ${species.habitat}</p>
+                    <p><strong>Population:</strong> ${species.population}</p>
+                    <p><strong>Status:</strong> 
+                        <span class="status-badge ${statusClass}">
+                        ${
+                            // species.population === 0 ? 'EXTINCT' : 
+                            // species.population < 30 ? 'CRITICAL' : 'STABLE'
+                            populationStage
+                        }
+                        </span>
+                    </p>
+                </div>
+            `;
     });
-    
-    html += '</div>';
-    if(dashboardDiv) dashboardDiv.innerHTML = html;
-    
-    updateAlerts();
+
+        html += '</div>';
+        if(dashboardDiv) dashboardDiv.innerHTML = html;
+
+        updateAlerts();
+        
+        // allSpecies.forEach(species => {
+        //     const statusClass = species.population === 0 ? 'extinct' : 
+        //                       species.population < 30 ? 'critical' : 'stable';
+
+        //     html += `
+        //         <div class="species-card ${statusClass}">
+        //             <h4>${species.name}</h4>
+        //             <p><strong>Type:</strong> ${species.speciesType}</p>
+        //             <p><strong>Habitat:</strong> ${species.habitat}</p>
+        //             <p><strong>Population:</strong> ${species.population}</p>
+        //             <p><strong>Status:</strong> <span class="status-badge ${statusClass}">${
+        //                 species.population === 0 ? 'EXTINCT' : 
+        //                 species.population < 30 ? 'CRITICAL' : 'STABLE'
+        //             }</span></p>
+        //         </div>
+        //     `;
+        // });
+
+        // html += '</div>';
+        // if(dashboardDiv) dashboardDiv.innerHTML = html;
+
+        // updateAlerts();
+    }
+    catch(err){
+
+    }
 }
 
 function updateAlerts() {
-    const critical = criticalPopulation.getCriticalSpecies(30);
+    const critical = criticalPopulation.getCriticalSpecies();
     
     if (critical.length === 0) {
         alertsDiv.innerHTML = '<p class="no-alerts">✓ No critical populations detected</p>';
@@ -222,7 +269,8 @@ function showNotification(message, type = 'success') {
 
 // Export for debugging
 window.ecoTrack = {
-    storage,
+    // storage,
+    ApiService,
     criticalPopulation,
     foodChain,
     visualizeFoodChain,

@@ -1,18 +1,19 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
+  root: 'client',
   server: {
     port: 3000,
     open: true,
     proxy: {
-      '/api': {                        // any /api/* request...
-        target: 'http://localhost:5000', // ...forwards to Express
+      '/api': {
+        target: 'http://localhost:5000',
         changeOrigin: true
       }
     }
   },
   build: {
-    outDir: 'dist',
+    outDir: '../dist',
     sourcemap: true
   }
 });

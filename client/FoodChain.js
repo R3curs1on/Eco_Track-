@@ -16,9 +16,12 @@ class FoodChain{
 
         this.graph.setNode(name, curr);
         if(curr instanceof Animal){
-            
-            curr.eats.forEach( prey => {
-                this.graph.setEdge(name , prey);
+            const eats = Array.isArray(curr.eats) ? curr.eats : [];
+            eats.forEach(preyName => {
+                const prey = String(preyName || '').trim().toLowerCase();
+                if (prey) {
+                    this.graph.setEdge(name, prey);
+                }
             });
         }
     }
