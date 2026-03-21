@@ -22,7 +22,7 @@ Priority levels:
 - [x] Implement `peek()`
 - [x] Implement `removeSpecies(name)`
 - [x] Implement `updateSpecies(species)`
-- [ ] Ensure queue automatically updates when population changes
+- [x] Ensure queue automatically updates when population changes
 
 ## Case Sensitivity
 - [x] Standardize all species keys to lowercase
@@ -45,9 +45,9 @@ Create `SpeciesValidator.js`
 - [x] Prevent empty names
 - [x] Prevent negative populations
 - [x] Prevent negative age
-- [ ] ~~Ensure animals have prey~~ ( depends on species type so not needed )
-- [ ] ~~Validate prey species exist~~ ( not really needed can add dropbox toggle list instead)
-- [ ] add dropbox toggle list at time of adding prey in animals
+- [x] ~~Ensure animals have prey~~ ( depends on species type so not needed )
+- [x] ~~Validate prey species exist~~ ( not really needed can add dropbox toggle list instead)
+- [x] add dropbox toggle list at time of adding prey in animals
 
 ---
 

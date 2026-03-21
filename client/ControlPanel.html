@@ -83,12 +83,20 @@
                             <label for="animal-age">Age (years)*</label>
                             <input type="number" id="animal-age" name="animal-age" required min="0" placeholder="0">
                         </div>
-                        
+<!--                         
                         <div class="form-group full-width">
                             <label for="animal-eats">Eats (comma-separated)*</label>
                             <input type="text" id="animal-eats" name="animal-eats" required placeholder="e.g., Grass, Berry Bush, Rabbit">
-                            <small>Enter the names of species this animal eats</small>
+                            <small>Select the names of species this animal eats</small>
+                        </div> -->
+
+                         <div class="form-group">
+                            <label for="animal-eats">Eats (select)</label>
+                            <select id="animal-eats-options" name="animal-eats" required>
+                                <option value="">-- Select --</option>
+                            </select>
                         </div>
+
                     </div>
                     
                     <div class="form-actions">
@@ -114,8 +122,8 @@
                         </div>
                         
                         <div class="form-group">
-                            <label for="plant-habitat">Habitat*</label>
-                            <input type="text" id="plant-habitat" name="plant-habitat" required placeholder="e.g., Forest, Wetland">
+                            <label for="plant-habitat">Habitat</label>
+                            <input type="text" id="plant-habitat" name="plant-habitat"  placeholder="e.g., Forest, Wetland">
                         </div>
                         
                         <div class="form-group">

@@ -9,7 +9,7 @@ const foodChain = new FoodChain();
 
 let addAnimalBtn, addPlantBtn , removeAnimalBtn, removePlantBtn ;  
 let animalForm, plantForm , removeAnimalForm, removePlantForm ; 
-
+let animalEatsOptions ;
 document.addEventListener('DOMContentLoaded', () => {
     initializeDOM();
     setupEventListeners();
@@ -29,6 +29,8 @@ function initializeDOM() {
     removeAnimalForm = document.getElementById('remove-animal-form');
     removePlantForm = document.getElementById('remove-plant-form');
 
+    animalEatsOptions = document.getElementById('animal-eats-options');
+
 
 }
 
@@ -45,12 +47,19 @@ function setupEventListeners() {
     document.getElementById('remove-animal-form-submit').addEventListener('submit', handleRemoveAnimalSubmit);
     document.getElementById('remove-plant-form-submit').addEventListener('submit', handleRemovePlantSubmit);
 
+    // animalEatsOptions.addEventListener('change', showOptionsForEats);
+
 }
 
 async function toggleForm(type) {
     if (type === 'animal') {
         animalForm.style.display = animalForm.style.display === 'none' ? 'block' : 'none';
         plantForm.style.display = 'none';
+
+        if(animalForm.style.display === 'block'){
+            await showOptionsForEats();
+        }
+
     } else if (type === 'plant') {
         plantForm.style.display = plantForm.style.display === 'none' ? 'block' : 'none';
         animalForm.style.display = 'none';
@@ -115,6 +124,34 @@ async function toggleForm(type) {
 
 }
 
+async function showOptionsForEats() {
+    let html = `<select id="animal-eats-options" name="animal-eats" required>
+                <option value="">-- Select --</option>
+                </select>;`
+
+    animalEatsOptions.innerHTML = `<select id="animal-eats-options" name="animal-eats" required>
+                <option value="">-- Select --</option>
+                </select>;`
+
+    try {
+        const allSpecies = await ApiService.getAllSpecies();  // fetch from MongoDB
+        if (allSpecies.length === 0) {
+            animalEatsOptions.innerHTML = html;
+            return;
+        }
+
+        allSpecies.forEach( species => {
+            const option = document.createElement('option');
+            option.value = species.name;
+            option.textContent =`${species.name} (${species.speciesType || 'Unknown'})`;
+            animalEatsOptions.appendChild(option);
+        })
+
+    }
+    catch(err){
+        console.log(' error showing options for eats '+err.message);
+    }
+}
 async function handleAnimalSubmit(e) {
     e.preventDefault();
     const formData = new FormData(e.target);
