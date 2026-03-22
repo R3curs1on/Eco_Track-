@@ -195,10 +195,11 @@ Identify species whose removal causes maximum ecosystem collapse.
 
 Tasks:
 
-- [ ] Simulate removal of each species
-- [ ] Measure total population loss
-- [ ] Rank species by ecosystem impact
-- [ ] Display keystone species list
+- [x] Simulate removal of each species
+- [x] Measure total population loss
+- [ ] Rank species by ecosystem impact 
+- [x] ~~Display keystone species list (tarjan algo articulation point) ~~
+- [ ] bugs in (Display keystone species list (tarjan algo articulation point) )
 
 ---
 

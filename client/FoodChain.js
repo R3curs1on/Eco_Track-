@@ -4,6 +4,55 @@
 import { Graph } from 'graphlib';
 import { Animal, Plant, Species } from './Species.js';
 
+// ...existing code...
+class TarjanArticulationNodes{
+    constructor(graph) {
+        this.graph = graph;
+        this.time = 0;
+        this.disc = {};
+        this.low = {};
+        this.parent = {};
+        this.ap = new Set();
+    }
+
+    getNeighborsUndirected(u) {
+        const succ = this.graph.successors(u) || [];
+        const pred = this.graph.predecessors(u) || [];
+        return [...new Set([...succ, ...pred])];
+    }
+
+    DFS(u) {
+        let children = 0;
+        this.disc[u] = this.low[u] = ++this.time;
+
+        const neighbors = this.getNeighborsUndirected(u);
+        for (const v of neighbors) {
+            if (!this.disc[v]) {
+                children++;
+                this.parent[v] = u;
+                this.DFS(v);
+                this.low[u] = Math.min(this.low[u], this.low[v]);
+
+                if (
+                    (this.parent[u] === undefined && children > 1) ||
+                    (this.parent[u] !== undefined && this.low[v] >= this.disc[u])
+                ) {
+                    this.ap.add(u);
+                }
+            } else if (v !== this.parent[u]) {
+                this.low[u] = Math.min(this.low[u], this.disc[v]);
+            }
+        }
+    }
+    
+    findArticulationPoints() {
+        for (const node of this.graph.nodes()) {
+            if (!this.disc[node]) this.DFS(node);
+        }
+        return Array.from(this.ap);
+    }
+}
+
 class FoodChain{
 
     constructor() {
@@ -183,6 +232,71 @@ class FoodChain{
 
         return { results, simulatedGraph: simulateGraph };
 
+    }
+
+
+    findKeystoneSpecies(){
+        /*
+async function fillKeystoneSpeciesInfo() {
+    try {
+        const keystoneSpecies = await foodChain.findKeystoneSpecies();
+        const container = document.getElementById('Keystone-species-list');
+        keystoneSpecies.forEach( speciesAndImpact =>{
+            const species = speciesAndImpact.species;
+            const impactList = speciesAndImpact.impactList;
+            // <!-- <button id="Speciesi"> Speciesi </button>
+            //         <ul id="speciesi-impact" class="species-impact"> // keep css property hidden until button click
+            //             <li> speciesj : impact x% </li>
+            //         </ul> -->
+
+            const speciesBtn = document.createElement('button');
+            speciesBtn.textContent = species.name;
+            speciesBtn.className = 'keystone-species-btn';
+            container.appendChild(speciesBtn);
+
+            const impactUl = document.createElement('ul');
+            impactUl.className = 'species-impact';
+            impactUl.style.display = 'none'; // hide by default
+
+            impactUl.innerHTML = impactList.map(impact =>
+                `<li>${impact.species.name}: impact ${(impact.impactFactor * 100).toFixed(0)}%</li>`
+            ).join('');
+
+            speciesBtn.addEventListener('click', () => {  
+                impactUl.style.display = impactUl.style.display === 'none' ? 'block' : 'none';
+            });
+            
+            container.appendChild(impactUl);
+        });
+    }
+    catch (error) {
+        console.error('Error finding keystone species:', error);
+        showNotification('Error finding keystone species: ' + error.message, 'error');
+    }
+}
+       */
+        const tarjan = new TarjanArticulationNodes(this.graph);
+        const articulationPoints = tarjan.findArticulationPoints();
+
+        const keystoneSpecies = articulationPoints.map( 
+            name => {
+                const species = this.graph.node(name);
+                const impactList = [];
+
+                // Calculate impact on prey (forward)
+                const simulateREM = this.simulateRemoval(name);
+                simulateREM.results.forEach( 
+                    ({ species: impactedSpecies, impactFactor, direction }) => {
+                        if(impactedSpecies.name.toLowerCase() !== name.toLowerCase()){
+                            impactList.push({ species: impactedSpecies, impactFactor, direction });
+                        }
+                    }
+                );
+                return { species, impactList };
+            }
+        );
+
+        return keystoneSpecies;
     }
 
 }

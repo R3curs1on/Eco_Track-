@@ -16,6 +16,7 @@ const criticalPopulation = new CriticalPopulation();
 const foodChain = new FoodChain();
 
 let  visualizeBtn, simulateBtn; 
+let  keystoneSpeciescontainer ;
 
 let speciesSelect  ;  
 let cyInstance = null; 
@@ -33,7 +34,7 @@ function initializeDOM() {
     visualizeBtn = document.getElementById('visualize-btn');
     simulateBtn = document.getElementById('simulate-btn');
      
- 
+    keystoneSpeciescontainer = document.getElementById('Keystone-species-show-button');
     speciesSelect = document.getElementById('species-select'); 
 
 }
@@ -42,6 +43,7 @@ function initializeDOM() {
 function setupEventListeners() { 
     visualizeBtn.addEventListener('click', visualizeFoodChain);
     simulateBtn.addEventListener('click', handleSimulateRemoval);
+    keystoneSpeciescontainer.addEventListener('click', fillKeystoneSpeciesInfo );
 }
 
 
@@ -171,6 +173,46 @@ function handleSimulateRemoval() {
         showNotification('Error during simulation: ' + error.message, 'error');
     }
 }
+async function fillKeystoneSpeciesInfo() {
+    try {
+        const keystoneSpecies = await foodChain.findKeystoneSpecies();
+        const container = document.getElementById('Keystone-species-list');
+        keystoneSpecies.forEach( speciesAndImpact =>{
+            const species = speciesAndImpact.species;
+            const impactList = speciesAndImpact.impactList;
+            // <!-- <button id="Speciesi"> Speciesi </button>
+            //         <ul id="speciesi-impact" class="species-impact"> // keep css property hidden until button click
+            //             <li> speciesj : impact x% </li>
+            //         </ul> -->
+
+            const speciesBtn = document.createElement('button');
+            speciesBtn.textContent = species.name;
+            speciesBtn.className = 'keystone-species-btn';
+            container.appendChild(speciesBtn);
+
+            const impactUl = document.createElement('ul');
+            impactUl.className = 'species-impact';
+            impactUl.style.display = 'none'; // hide by default
+
+            impactUl.innerHTML = impactList.map(impact =>
+                `<li>${impact.species.name}: impact ${(impact.impactFactor * 100).toFixed(0)}%</li>`
+            ).join('');
+
+            speciesBtn.addEventListener('click', () => {  
+                impactUl.style.display = impactUl.style.display === 'none' ? 'block' : 'none';
+            });
+
+            container.appendChild(impactUl);
+        });
+    }
+    catch (error) {
+        console.error('Error finding keystone species:', error);
+        showNotification('Error finding keystone species: ' + error.message, 'error');
+    }
+
+
+}
+
 
 function showNotification(message, type = 'success') {
     const notification = document.createElement('div');
