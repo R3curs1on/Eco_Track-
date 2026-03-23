@@ -1,161 +1,173 @@
 # 🌿 EcoTrack - Ecosystem Management System
 
-An interactive web application for managing ecosystems, tracking species populations, and visualizing food chains using fundamental data structures.
+EcoTrack is a full-stack ecosystem management app for tracking species, monitoring critical populations, visualizing food-chain relationships, and simulating species removal impact.
 
-## 📋 Features
+It uses:
+- **Frontend:** Vite + Vanilla JS
+- **Backend:** Express + MongoDB (Mongoose)
+- **Graph rendering:** Cytoscape.js
 
-- **HashMap Storage**: Efficient species data management using JavaScript Map
-- **Priority Queue**: Critical population monitoring and alerts
-- **Directed Graph**: Food chain/web representation with predator-prey relationships
-- **Interactive Visualization**: Cytoscape.js-powered food chain graph
-- **Ecosystem Simulation**: Analyze impact of species removal on the ecosystem
-- **Real-time Dashboard**: View all species, populations, and health statuses
+---
 
-## 🏗️ Data Structures Used
+## ✨ Current Features
 
-1. **HashMap (Map)** - Storage.js
-   - Fast O(1) lookup, insertion, and deletion
-   - Stores species data with name as key
+- Add/remove species from a MongoDB-backed dataset
+- Real-time species dashboard
+- Critical population alerts using a priority queue
+- Directed food-chain graph visualization
+- Species-removal simulation with propagated impact
+- Keystone-species discovery (articulation-point based)
 
-2. **Priority Queue** - CriticalPopulation.js
-   - Automatically sorts species by population
-   - Quick access to most critical species
+---
 
-3. **Directed Graph** - FoodChain.js
-   - Represents predator-prey relationships
-   - BFS algorithm for impact analysis
+## 🧱 Data Structures & Core Logic
 
-## 🚀 Quick Start
+1. **Priority Queue (Min Heap)**  
+   - Implemented in `client/CriticalPopulation.js`
+   - Tracks low-population species efficiently
 
-### Prerequisites
+2. **Directed Graph**  
+   - Implemented in `client/FoodChain.js` (graphlib)
+   - Stores predator → prey relationships
+   - Supports simulation and keystone analysis
 
-- Node.js (v16 or higher)
-- npm or yarn
+3. **Domain Models**  
+   - Client-side classes in `client/Species.js`
+   - Server-side schema/model in `server/models/species.js`
 
-### Installation
+> Note: `Storage.js` is legacy and no longer the active persistence layer.
+
+---
+
+## 🗂️ Project Structure
+
+```text
+EcoTrack/
+├── .env
+├── package.json
+├── README.md
+├── Storage.js (legacy)
+├── vite.config.js
+├── client/
+│   ├── index.html
+│   ├── index.js
+│   ├── ControlPanel.html
+│   ├── ControlPanel.js
+│   ├── SImulation.html
+│   ├── simulation.js
+│   ├── ApiService.js
+│   ├── Species.js
+│   ├── CriticalPopulation.js
+│   ├── FoodChain.js
+│   ├── RenderCytoscape.js
+│   └── style.css
+└── server/
+    ├── server.js
+    ├── models/
+    │   └── species.js
+    └── routes/
+        └── species.js
+```
+
+---
+
+## ⚙️ Prerequisites
+
+- Node.js (v16+ recommended)
+- npm
+- MongoDB running locally (or a remote Mongo URI)
+
+---
+
+## 🔐 Environment Variables
+
+Create `.env` in project root:
+
+```env
+MONGO_URI=mongodb://127.0.0.1:27017/ecotrack
+PORT=5000
+```
+
+---
+
+## 🚀 Run Locally
 
 1. Install dependencies:
 ```bash
 npm install
 ```
 
-2. Start development server:
+2. Start backend + frontend together:
 ```bash
-# npm run dev
 npm run dev:full
 ```
 
-3. Open browser to `http://localhost:3000`
+This runs:
+- Express API on `http://localhost:5000`
+- Vite frontend on `http://localhost:3000`
 
-### Build for Production
+### Alternative (separate terminals)
 
 ```bash
-# npm run build
-# npm run preview
-npm run dev:full
+npm run server
 ```
 
-## 📖 Usage
-
-### Adding Species
-
-1. Click **"Add Animal"** or **"Add Plant"** button
-2. Fill in the form with species details:
-   - Name, Type, Habitat, Population, etc.
-   - For animals: specify what they eat (comma-separated)
-3. Submit to add to ecosystem
-
-### Visualizing Food Chain
-
-1. Add several species with predator-prey relationships
-2. Click **"Visualize Food Chain"** button
-3. Graph displays:
-   - **Green nodes**: Stable population (≥30)
-   - **Orange nodes**: Critical population (<30)
-   - **Red nodes**: Extinct (0)
-   - **Arrows**: Who eats whom
-
-### Simulating Species Removal
-
-1. Select a species from dropdown
-2. Click **"Simulate Removal"**
-3. View impact on ecosystem:
-   - Affected species highlighted
-   - Impact factor calculated by graph distance
-   - Adjusted populations shown
-
-## 🗂️ Project Structure
-
-```
-EcoTrack/
-├── index.html          # Main HTML UI
-├── index.js            # Application logic & event handlers
-├── style.css           # Styling
-├── Species.js          # Species, Animal, Plant classes
-├── Storage.js          # HashMap implementation
-├── CriticalPopulation.js  # Priority Queue implementation
-├── FoodChain.js        # Directed Graph implementation
-├── RenderCytoscape.js  # Visualization rendering
-├── package.json        # Dependencies & scripts
-├── vite.config.js      # Vite bundler configuration
-└── README.md           # This file
+```bash
+npm run dev
 ```
 
-## 🎯 Project Requirements Checklist
+---
 
-- ✅ User input animals - name, type, carnivore/herbivore
-- ✅ Store animals and their populations
-- ✅ Use HashMap for storing data
-- ✅ Use Queue for critical population
-- ✅ Use Graphs for food chain
-- ✅ Use numeric factor for population
-- ✅ Show dashboard using HashMap and critical population using Queue
-- ✅ Show food chain using graphs with Cytoscape.js
-- ✅ Show effect on ecosystem if one species is removed/extinct
+## 🌐 Frontend Routes/Pages
 
-## 🧪 Sample Data
+- Home dashboard: `http://localhost:3000/`
+- Control panel: `http://localhost:3000/ControlPanel.html`
+- Simulation page: `http://localhost:3000/SImulation.html`
 
-The app loads sample ecosystem data on startup:
+---
 
-**Plants:**
-- Grass (500 population)
-- Berry Bush (200 population)
-- Oak Tree (150 population)
+## 🔌 API Endpoints
 
-**Animals:**
-- Rabbit (120) - eats Grass, Berry Bush
-- Deer (80) - eats Grass, Berry Bush, Oak Tree
-- Fox (25) - eats Rabbit
-- Wolf (15) - eats Rabbit, Deer
-- Hawk (20) - eats Rabbit
+Base URL (dev): `http://localhost:5000`
 
-## 🔧 Technologies
+- `GET /api/health` — health check
+- `GET /api/species` — list all species
+- `GET /api/species/:name` — get one species by name
+- `POST /api/species` — create species
+- `PUT /api/species/:name` — update species
+- `DELETE /api/species/:name` — delete species
 
-- **Frontend**: HTML5, CSS3, Vanilla JavaScript (ES6+)
-- **Data Visualization**: Cytoscape.js
-- **Graph Library**: graphlib
-- **Build Tool**: Vite
-- **Module System**: ES Modules
+---
 
-## 📊 Algorithms
+## 🧪 Simulation Logic (Current)
 
-### BFS for Impact Analysis
-When a species is removed, the app uses Breadth-First Search to:
-1. Find all species in the food chain affected
-2. Calculate distance from removed species
-3. Compute impact factor based on distance
-4. Adjust populations accordingly
+Species-removal simulation in `client/FoodChain.js`:
+- Traverses affected nodes in both directions (predators and prey)
+- Computes impact factor by graph distance
+- Produces a simulated graph with adjusted populations
 
-### Impact Factor Formula
-```
-impactFactor = distance / maxDistance
-adjustedPopulation = originalPopulation * impactFactor
-```
+Keystone detection:
+- Uses articulation-point detection (`TarjanArticulationNodes`)
 
-## 🤝 Contributing
+---
 
-Feel free to fork, improve, and submit pull requests!
+## 📦 Tech Stack
 
-## 📝 License
+- **Frontend:** HTML, CSS, Vanilla JS, Vite
+- **Backend:** Node.js, Express, Mongoose, CORS, dotenv
+- **Algorithms/Data:** graphlib, heap-js
+- **Visualization:** Cytoscape.js
 
-ISC License
+---
+
+## 📝 Notes
+
+- Species names are normalized to lowercase in multiple layers for consistency.
+- API requests from Vite are proxied via `/api` to backend (`vite.config.js`).
+- Sample data is auto-seeded from client flows when DB is empty.
+
+---
+
+## 📄 License
+
+ISC
