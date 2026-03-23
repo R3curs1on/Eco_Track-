@@ -1,432 +1,155 @@
 # EcoTrack – Development Roadmap
 
-This document tracks all improvements required to evolve EcoTrack from a
-basic ecosystem visualization tool into a full ecosystem simulation platform.
+---
 
-Priority levels:
-- P0 = Critical (must fix)
-- P1 = Core architecture upgrades
-- P2 = Advanced ecosystem modelling
-- P3 = Visualization & analytics
-- P4 = UX improvements
-- P5 = Dev quality improvements
+## DONE ✅
+- Min Heap Priority Queue (enqueue, dequeue, peek, remove, update)
+- Lowercase normalization across all layers
+- Duplicate node prevention in graph
+- SpeciesValidator.js (name, population, age)
+- Prey dropdown selector on species creation
+- MongoDB backend (GET/POST/PUT/DELETE /species)
+- localStorage fully replaced
+- Frontend isolated from backend via ApiService.js
 
 ---
 
-# P0 — Critical Fixes (Stability & Correctness)
+## P0 — Must Fix Before Anything Else
 
-## Priority Queue
-- [x] Replace array-based queue with **Min Heap Priority Queue** (used heap-js)
-- [x] Implement `enqueue()`
-- [x] Implement `dequeue()`
-- [x] Implement `peek()`
-- [x] Implement `removeSpecies(name)`
-- [x] Implement `updateSpecies(species)`
-- [x] Ensure queue automatically updates when population changes
+### Graph Sync on Load
+- [ ] On page load, fetch all species from MongoDB and rebuild FoodChain graph in memory
+- [ ] On page load, rebuild CriticalPopulation heap from fetched species
 
-## Case Sensitivity
-- [x] Standardize all species keys to lowercase
-- [x] Enforce lowercase in:
-- [x] ~~Storage.js~~ (using mongodb)
-- [x] FoodChain.js
-- [x] CriticalPopulation.js
-- [x] Simulation.js
+### Error Handling
+- [ ] Wrap all ApiService fetch calls in try/catch
+- [ ] Show user-facing error banner (not console.error) on network failure
 
-## Graph Synchronization
-- [x] ~~Rebuild FoodChain graph from localStorage on page load~~
-- [ ] Rebuild FoodChain graph from mongodb from memory on page load
-- [x] ~~Rebuild CriticalPopulation queue from storage~~
-- [x] Prevent duplicate nodes in graph
-
-## Validation
-Create `SpeciesValidator.js`
-
-- [x] Validate species name
-- [x] Prevent empty names
-- [x] Prevent negative populations
-- [x] Prevent negative age
-- [x] ~~Ensure animals have prey~~ ( depends on species type so not needed )
-- [x] ~~Validate prey species exist~~ ( not really needed can add dropbox toggle list instead)
-- [x] add dropbox toggle list at time of adding prey in animals
+### Fix Tarjan Articulation Point Bugs
+- [ ] Rewrite `findKeystoneSpecies()` using corrected DFS-coloring: `disc[]`, `low[]`, `parent[]`
+- [ ] Run against a manually constructed test graph (5 nodes, known articulation points) before wiring to UI
+- [ ] Note: run Tarjan on the **undirected** version of the food web — structural integrity, not direction, determines articulation points
 
 ---
 
-# P1 — Architecture Improvements
+## P1 — Simulation Engine
 
-## Domain Layer Refactor
+### Species Schema — New Fields
+- [ ] `trophicLevel` — integer: 0 (plant), 1 (herbivore), 2 (carnivore), 3 (apex)
+- [ ] `growthRate` — α for prey growth / γ for predator natural death rate
+- [ ] `predationRate` — β, how fast this species gets consumed
+- [ ] `conversionRate` — δ, energy this species gains from consuming prey
+- [ ] Add all four fields to MongoDB schema (`server/models/species.js`)
+- [ ] Add all four fields to client-side `Species.js` class
+- [ ] Add form inputs for these fields in ControlPanel — use sensible defaults (e.g. growthRate: 0.4 for plants, 0.1 for predators)
 
-- Separate logic into layers:
-- Domain
-- Species
-- FoodChain
-- Simulation
-- PriorityQueue
-- 
-- Application
-- EcosystemService
-- 
-- Presentation
-- UI
+### SimulationEngine.js
+- [ ] Create `client/SimulationEngine.js`
+- [ ] Implement `tick(graph, speciesMap, Δt)` using discretized Lotka-Volterra:
+  ```
+  prey:     x(t+1) = x(t) + Δt * (α·x - β·x·y)
+  predator: y(t+1) = y(t) + Δt * (δ·x·y - γ·y)
+  ```
+- [ ] Each tick derives y (total predator pressure) and x (total prey availability) from graph edges — not hardcoded pairs
+- [ ] Clamp all populations to 0 after each tick (no negative values)
+- [ ] **Starvation logic:** if a predator's total prey population falls below 10% of its own population, multiply its death rate by 2.0 that tick
+- [ ] **Cascading extinction:** when a species hits 0, mark it `extinct`, remove its edges from the graph, re-run tick — downstream species now have reduced prey/predator pressure
+- [ ] Store full history: `{ rabbitHistory: [500, 480, 460, ...], wolfHistory: [...] }`
+- [ ] Expose `runSimulation(years)` — converts years to ticks (1 year = 12 ticks at Δt=0.1) and returns history object
 
+### Sandbox Mode
+- [ ] Simulation always runs on a **deep clone** of the live species/graph state
+- [ ] Never mutate MongoDB or the live graph during a simulation run
+- [ ] Only commit results back if user explicitly clicks "Apply to Ecosystem"
 
-
-### Tasks
-
-- [ ]~~ Create `EcosystemService.js`~~ ( seperate client and server layer)
-- [ ] Move all ecosystem logic into service layer
-- [x] UI should call only service methods ( already frontend is isolated)
-
-Example:
-- ecosystemService.addSpecies(data)
-- ecosystemService.removeSpecies(name)
-- ecosystemService.simulateRemoval(name)
-
-
----
-
-## Backend API (Replace localStorage)
-
-Create backend service.
-Tech stack suggestion:
-
--  Node.js
--  Express
--  MongoDB
-
-
-Endpoints:
-
-- [x] `GET /species`
-- [x] `POST /species`
-- [x] `DELETE /species/:id`
-- [x] `PUT /species/:id`
-- [x] `GET /foodchain`
+### Simulation UI (Simulation.html)
+- [ ] Dropdown: simulate 1 / 10 / 50 years
+- [ ] Button: Run Simulation
+- [ ] On run: call `runSimulation(years)`, render Chart.js time-series (one line per species)
+- [ ] x-axis = ticks, y-axis = population
+- [ ] Species that go extinct: line drops to 0, render as dashed
+- [ ] Below chart: list species that went extinct and at which tick/year
 
 ---
 
-## Data Persistence
+## P2 — Graph Algorithms
 
-- [x] Replace localStorage persistence
-- [x] Implement API data fetching
-- [ ] Add error handling for network failures
+### Cycle Detection
+- [ ] Implement `detectCycles(graph)` — DFS with 3-color marking (0 = unvisited, 1 = in-stack, 2 = done)
+- [ ] Returns array of cycles; each cycle is an ordered array of species names e.g. `['wolf', 'deer', 'grass']`
+- [ ] On food chain page: show warning panel listing each detected cycle as `A → B → C → A`
+- [ ] In Cytoscape: give cycle-member nodes an orange border
+- [ ] Ecological note rendered in UI: "Feedback loops cause population oscillation — expected behavior in Lotka-Volterra"
 
----
+### Keystone Species Ranking
+- [ ] After Tarjan fix: for each articulation point, call `simulateRemoval(name)` and record total population lost across all species
+- [ ] Sort articulation points by total population loss descending
+- [ ] Display ranked table: rank | name | impact score (total population units lost)
+- [ ] In Cytoscape: highlight keystone nodes with red border
+- [ ] Add color legend toggle in graph panel (red = keystone, orange = cycle member, default = normal)
 
-# P2 — Ecosystem Simulation Engine
-
-Upgrade simulation from simple BFS impact → ecological model.
-
-## Trophic Levels
-
-Add trophic levels to species.
-Levels:
-
--  0 → Plants
--  1 → Herbivores
--  2 → Carnivores
--  3 → Apex predators
-
-
-Tasks:
-
-- [ ] Assign trophic level to each species
-- [ ] Store trophic level in species object
-- [ ] Adjust simulation impact based on trophic distance
+### Robustness Index
+- [ ] For each species, compute: `connectivityLost = (edgesRemoved / totalEdges) * 100`
+- [ ] Store as `robustnessImpact` on each species object after analysis
+- [ ] Surface in the species info panel (see P3)
 
 ---
 
-## Energy Flow Model
+## P3 — Ecosystem Stability Score
 
-Add energy transfer between trophic levels.
+### EcosystemScore.js
+- [ ] **Shannon Diversity Index:**
+  `H = -Σ (p_i * ln(p_i))` where `p_i = species.population / totalPopulation`
+  Normalize: `H_norm = H / ln(n)` → range 0–1
+- [ ] **Trophic Pyramid Balance:**
+  Check `count(level 0) ≥ count(level 1) ≥ count(level 2)`
+  Returns 1.0 if pyramid holds, 0.5 if any level is inverted
+- [ ] **Connectivity Density:**
+  `density = edges / (nodes * (nodes - 1))`
+  Score = `1 - abs(density - 0.3) / 0.3` — peaks at 0.3, penalizes deviation
+- [ ] **Final score:**
+  `score = round((H_norm * 0.4 + T * 0.3 + C * 0.3) * 100)`
 
-Example:
--  Plants → Herbivores → Carnivores
-
-
-Tasks:
-
-- [ ] Model energy consumption
-- [ ] Calculate predator survival based on prey availability
-- [ ] Reduce population if food supply insufficient
-
----
-
-## Population Growth
-
-Add natural growth rates.
-Example:
-- plants grow faster
-- predators reproduce slower
-
-
-Tasks:
-
-- [ ] Add growth rate attribute
-- [ ] Simulate reproduction
-- [ ] Simulate natural deaths
+### Wire to Dashboard
+- [ ] Display 0–100 score on main dashboard
+- [ ] Recompute on every species add / remove / population update
+- [ ] Show which sub-metric is lowest, e.g. "⚠ Low biodiversity pulling score down"
+- [ ] After simulation run: show score before and after side-by-side
 
 ---
 
-## Time Simulation Engine
-Add time progression.
-Example:
+## P4 — Visualization
 
--  simulate 1 month
--  simulate 1 year
--  simulate 10 years
--  
+### Species Info Panel (on node click)
+- [ ] Cytoscape `tap` event: show inline side panel (graph stays visible)
+- [ ] Panel displays: name, population, trophic level, predators list, prey list, robustness impact %
+- [ ] If species is keystone: show badge "⚠ Keystone Species"
 
-Tasks:
+### Statistics Bar on Dashboard
+- [ ] Total species count
+- [ ] Ecosystem health score
+- [ ] Critical species count (bottom N from priority queue)
+- [ ] Extinct species count (tracked from simulation runs)
 
-- [ ] Create `SimulationEngine.js`
-- [ ] Implement timestep loop
-- [ ] Update populations every step
-- [ ] Update ecosystem stability metrics
-
----
-
-# P3 — Graph Algorithms & Ecosystem Analytics
-
-Use graph theory to analyze ecosystem stability.
-
-## Keystone Species Detection
-
-Identify species whose removal causes maximum ecosystem collapse.
-
-Tasks:
-
-- [x] Simulate removal of each species
-- [x] Measure total population loss
-- [ ] Rank species by ecosystem impact 
-- [x] ~~Display keystone species list (tarjan algo articulation point) ~~
-- [ ] bugs in (Display keystone species list (tarjan algo articulation point) )
+### Simulation Chart
+- [ ] One line per species (Chart.js), x = time ticks, y = population
+- [ ] Extinct species: dashed line dropping to 0
+- [ ] Keystone species lines: distinct color (matches graph highlight)
 
 ---
 
-## Cycle Detection
+## Documentation (Do Last, Before Publish)
 
-Detect unstable predator loops.
-Example:
-
-- A → B
-- B → C
-- C → A
-
-
-Tasks:
-
-- [ ] Implement cycle detection algorithm
-- [ ] Warn user about ecosystem instability
+- [ ] `ARCHITECTURE.md` — diagram of client/server layers, data flow from MongoDB → FoodChain graph → SimulationEngine → UI
+- [ ] `ALGORITHMS.md` — explain Tarjan (articulation points), DFS cycle detection, Lotka-Volterra discretization, Shannon index. Include the actual equations.
+- [ ] Update README with real setup instructions and a screenshot of the simulation chart
 
 ---
 
-## Centrality Metrics
-
-Calculate species importance in network.
-
-Metrics:
-
-- Degree centrality
-- Betweenness centrality
-
-Tasks:
-
-- [ ] Implement centrality analysis
-- [ ] Highlight most important nodes
-
----
-
-## Ecosystem Stability Score
-
-Create ecosystem health metric.
-
-Factors:
-
-- biodiversity
-- food chain balance
-- extinction count
-- population variance
-
-Tasks:
-
-- [ ] Implement scoring algorithm
-- [ ] Display ecosystem health score
-
----
-
-# P4 — Visualization Improvements
-
-## Graph Layouts
-
-Add layout selector.
-
-Options:
-
-- Breadthfirst
-- Force-directed
-- Circular
-
-Tasks:
-
-- [ ] Implement layout dropdown
-- [ ] Allow dynamic layout switching
-
----
-
-## Species Information Panel
-
-When clicking node:
-
-Display:
-
-- species name
-- population
-- trophic level
-- predators
-- prey
-
-Tasks:
-
-- [ ] Implement info modal on each Node 
-
----
-
-## Keystone Species Highlight
-
-- [ ] Highlight keystone species in graph
-- [ ] Color nodes by ecosystem importance
-- [ ] a small (info) toggle for color info
----
-
-## Collapse Visualization
-
-When species removed:
-
-- [ ] animate cascading population changes
-- [ ] visualize extinction chain
-- [ ] that graph physics like nodes floating in space ( ekagra )
-
----
-
-# P5 — UX Improvements
-
-## Search & Filtering
-
-- [ ] Search species by name
-- [ ] Filter by type
-- [ ] Filter by population status
-- [ ] Filter by trophic level
-
----
-
-## Statistics Dashboard
-
-Display:
-
-- total species
-- ecosystem health
-- average population
-- critical species
-- extinct species
-
----
-
-## Export / Import
-
-- [ ] Export ecosystem to JSON
-- [ ] Import ecosystem from JSON
-- [ ] Backup ecosystem data
-
----
-
-## Confirmation Dialogs
-
-- [ ] Confirm species deletion
-- [ ] Confirm ecosystem reset
-
----
-
-## Loading States
-
-- [ ] Loading spinner during simulation
-- [ ] Loading state for graph rendering
-
----
-
-# P6 — Developer Quality Improvements
-
-## Unit Tests
-
-Setup testing framework.
-
-Suggested:
-- Vitest
-
-Test coverage:
-
-- [ ] Storage
-- [ ] PriorityQueue
-- [ ] FoodChain graph
-- [ ] Simulation engine
-
----
-
-## Performance Optimization
-
-- [ ] Debounce search input
-- [ ] Optimize graph rendering
-- [ ] Avoid redundant graph rebuilds
-
----
-
-## Documentation
-
-Improve repository documentation.
-
-- [ ] Architecture diagram
-- [ ] Data flow diagram
-- [ ] Simulation algorithm explanation
-- [ ] Graph algorithm explanation
-- [ ] Setup instructions
-
----
-
-# Stretch Goals (Advanced)
-
-These would make EcoTrack a standout project.
-
-## AI Ecosystem Balancer
-
-Goal:
-
-Maintain ecosystem health above threshold.
-
-Tasks:
-
-- [ ] Implement heuristic balancing algorithm
-- [ ] Suggest species population adjustments
-
----
-
-## Ecosystem Evolution Mode
-
-Simulate ecosystem over decades.
-
-Tasks:
-
-- [ ] long-term population dynamics
-- [ ] climate effects
-- [ ] random environmental events
-
----
-
-## Multiplayer Ecosystem
-
-Allow multiple users to modify ecosystem.
-
-Tasks:
-
-- [ ] WebSocket server
-- [ ] shared ecosystem state
-
-
+## SKIP — Not Worth It
+- Multiplayer / WebSocket
+- AI Ecosystem Balancer
+- Climate effects / evolution mode
+- Export / Import JSON (10 min job, do after everything else if time allows)
+- Vitest (only worth adding for `SimulationEngine.tick()` since it's pure logic with no DOM)
+- Layout switcher in Cytoscape (one-liner, add last if bored)
+- Betweenness centrality (no meaningful resume differentiation over what articulation points already give you)
