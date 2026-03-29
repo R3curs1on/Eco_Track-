@@ -1,304 +1,321 @@
-
-// graphs of food chains and webs -- directed graphs where nodes are Species and edges are "eats" relationships
-
 import { Graph } from 'graphlib';
-import { Animal, Plant, Species } from './Species.js';
+import { Tarjan } from './TarjanAlgo.js';
+import { cloneSpeciesData, isAnimalSpecies, normalizeEats, toLowerName } from './speciesUtils.js';
 
-// ...existing code...
-class TarjanArticulationNodes{
-    constructor(graph) {
-        this.graph = graph;
-        this.time = 0;
-        this.disc = {};
-        this.low = {};
-        this.parent = {};
-        this.ap = new Set();
-    }
-
-    getNeighborsUndirected(u) {
-        const succ = this.graph.successors(u) || [];
-        const pred = this.graph.predecessors(u) || [];
-        return [...new Set([...succ, ...pred])];
-    }
-
-    DFS(u) {
-        let children = 0;
-        this.disc[u] = this.low[u] = ++this.time;
-
-        const neighbors = this.getNeighborsUndirected(u);
-        for (const v of neighbors) {
-            if (!this.disc[v]) {
-                children++;
-                this.parent[v] = u;
-                this.DFS(v);
-                this.low[u] = Math.min(this.low[u], this.low[v]);
-
-                if (
-                    (this.parent[u] === undefined && children > 1) ||
-                    (this.parent[u] !== undefined && this.low[v] >= this.disc[u])
-                ) {
-                    this.ap.add(u);
-                }
-            } else if (v !== this.parent[u]) {
-                this.low[u] = Math.min(this.low[u], this.disc[v]);
-            }
-        }
-    }
-    
-    findArticulationPoints() {
-        for (const node of this.graph.nodes()) {
-            if (!this.disc[node]) this.DFS(node);
-        }
-        return Array.from(this.ap);
-    }
+function uniqueNeighbors(graph, node) {
+    const successors = graph.successors(node) || [];
+    const predecessors = graph.predecessors(node) || [];
+    return [...new Set([...successors, ...predecessors])];
 }
 
-class FoodChain{
-
-    constructor() {
-        this.graph = new Graph({directed : true});
+function rotateCycle(cycle) {
+    if (!cycle.length) {
+        return cycle;
     }
 
-    addSpecies(species){
-        const curr = species ;
-        const name = curr.name.toLowerCase();
+    let bestIndex = 0;
+    for (let index = 1; index < cycle.length; index += 1) {
+        if (cycle[index] < cycle[bestIndex]) {
+            bestIndex = index;
+        }
+    }
 
-        this.graph.setNode(name, curr);
-        if(curr instanceof Animal){
-            const eats = Array.isArray(curr.eats) ? curr.eats : [];
-            eats.forEach(preyName => {
-                const prey = String(preyName || '').trim().toLowerCase();
-                if (prey) {
-                    this.graph.setEdge(name, prey);
+    return [...cycle.slice(bestIndex), ...cycle.slice(0, bestIndex)];
+}
+
+class FoodChain {
+    constructor() {
+        this.graph = new Graph({ directed: true });
+    }
+
+    clear() {
+        this.graph = new Graph({ directed: true });
+    }
+
+    rebuild(speciesList) {
+        this.clear();
+
+        speciesList.forEach((species) => {
+            const normalized = cloneSpeciesData(species);
+            this.graph.setNode(normalized.name, normalized);
+        });
+
+        speciesList.forEach((species) => {
+            const normalized = cloneSpeciesData(species);
+            if (!isAnimalSpecies(normalized)) {
+                return;
+            }
+
+            normalizeEats(normalized.eats).forEach((preyName) => {
+                if (this.graph.hasNode(preyName)) {
+                    this.graph.setEdge(normalized.name, preyName);
                 }
             });
-        }
+        });
     }
 
-    getAllPrey(speciesName){
-        // get all nodes reachable from speciesName
-        speciesName = speciesName.toLowerCase();
-        if(!this.graph.hasNode(speciesName)){
-            return null;
+    addSpecies(species) {
+        const normalized = cloneSpeciesData(species);
+        this.graph.setNode(normalized.name, normalized);
+
+        const outgoingEdges = this.graph.outEdges(normalized.name) || [];
+        outgoingEdges.forEach(({ v, w }) => this.graph.removeEdge(v, w));
+
+        if (!isAnimalSpecies(normalized)) {
+            return;
         }
-        return this.graph.successors(speciesName); // forward edges
+
+        normalizeEats(normalized.eats).forEach((preyName) => {
+            if (this.graph.hasNode(preyName)) {
+                this.graph.setEdge(normalized.name, preyName);
+            }
+        });
     }
 
-    getAllPredators(speciesName){
-        speciesName = speciesName.toLowerCase();
-        if(!this.graph.hasNode(speciesName)){
-            return null;
-        }
-        return this.graph.predecessors(speciesName); // back edges
+    cloneGraph() {
+        const cloned = new Graph({ directed: true });
+
+        this.graph.nodes().forEach((name) => {
+            cloned.setNode(name, cloneSpeciesData(this.graph.node(name)));
+        });
+
+        this.graph.edges().forEach(({ v, w }) => {
+            cloned.setEdge(v, w);
+        });
+
+        return cloned;
     }
 
-    getAllSpecies(){
-        return this.graph.nodes().map( name => this.graph.node(name) );
+    getAllPrey(speciesName) {
+        const normalizedName = toLowerName(speciesName);
+        if (!this.graph.hasNode(normalizedName)) {
+            return [];
+        }
+        return this.graph.successors(normalizedName) || [];
     }
 
-    printGraph(){  // probably use D3.js or similar library to visualize food chains later -- looks cool and useful
-        let visualize = "Food Chain Graph:\n";
-        for(const node of this.graph.nodes()){
-            visualize += `Species: ${node}\n`;
-            const prey = this.getAllPrey(node);
+    getAllPredators(speciesName) {
+        const normalizedName = toLowerName(speciesName);
+        if (!this.graph.hasNode(normalizedName)) {
+            return [];
         }
-        // console.log(visualize);
-        return visualize;
+        return this.graph.predecessors(normalizedName) || [];
+    }
+
+    getAllSpecies() {
+        return this.graph.nodes().map((name) => this.graph.node(name));
+    }
+
+    printGraph() {
+        return this.graph.nodes()
+            .map((node) => `${node} -> ${(this.graph.successors(node) || []).join(', ')}`)
+            .join('\n');
     }
 
     removeSpecies(speciesName) {
-        const name = speciesName.toLowerCase();
-    
-        if (!this.graph.hasNode(name)) {
+        const normalizedName = toLowerName(speciesName);
+
+        if (!this.graph.hasNode(normalizedName)) {
             return;
         }
-    
-        // Remove all edges where this species is source or target
-        const inEdges = this.graph.inEdges(name) || [];
-        const outEdges = this.graph.outEdges(name) || [];
-        
-        inEdges.forEach(edge => {
-            this.graph.removeEdge(edge.v, edge.w);
+
+        this.graph.nodes().forEach((nodeName) => {
+            const species = this.graph.node(nodeName);
+            if (!species || !Array.isArray(species.eats)) {
+                return;
+            }
+
+            const nextEats = normalizeEats(species.eats).filter((prey) => prey !== normalizedName);
+            if (nextEats.length !== species.eats.length) {
+                this.graph.setNode(nodeName, { ...species, eats: nextEats });
+            }
         });
-        
-        outEdges.forEach(edge => {
-            this.graph.removeEdge(edge.v, edge.w);
-        });
-        
-        // Remove the node itself
-        this.graph.removeNode(name);
+
+        this.graph.removeNode(normalizedName);
     }
 
-    simulateRemoval( speciesName ){
-        // Simulate removal by analyzing impact on BOTH prey (forward) and predators (backward)
-        // Prey are affected because they lose a predator (population may increase initially but ecosystem destabilizes)
-        // Predators are affected because they lose a food source (population decreases)
-        
-        speciesName = speciesName.toLowerCase();
-        if(!this.graph.hasNode(speciesName)){
+    simulateRemoval(speciesName) {
+        const targetName = toLowerName(speciesName);
+        if (!this.graph.hasNode(targetName)) {
             return null;
         }
 
-        const affectedSpecies = [];
-        let maxDist = 0;
-        
-        // BFS to find all affected species in BOTH directions
-        const visited = new Set();
-        const queue = [];
-        queue.push( { name: speciesName, dist: 0, direction: 'origin' } );
-        visited.add(speciesName);
-        
-        while(queue.length > 0){
-            const curr = queue.shift();
-            const currName = curr.name;
-            const currDist = curr.dist;
-            
-            if(currDist > maxDist){
-                maxDist = currDist;
+        const simulatedGraph = this.cloneGraph();
+        const queue = [{ name: targetName, distance: 0, direction: 'origin' }];
+        const visited = new Set([targetName]);
+        const impacts = [];
+        let maxDistance = 0;
+
+        while (queue.length > 0) {
+            const current = queue.shift();
+            maxDistance = Math.max(maxDistance, current.distance);
+
+            if (current.distance > 0) {
+                impacts.push(current);
             }
-            
-            if(currDist > 0){ // skip the removed species itself
-                const species = this.graph.node(currName);
-                affectedSpecies.push( { species, dist: currDist, direction: curr.direction } );
+
+            for (const prey of this.getAllPrey(current.name)) {
+                if (!visited.has(prey)) {
+                    visited.add(prey);
+                    queue.push({ name: prey, distance: current.distance + 1, direction: 'prey' });
+                }
             }
-            
-            // Forward edges: prey that this species eats (they lose a predator)
-            const prey = this.graph.successors(currName) || [];
-            prey.forEach( neighbor => {
-                if(!visited.has(neighbor)){
-                    visited.add(neighbor);
-                    queue.push( { name: neighbor, dist: currDist + 1, direction: 'prey' } );
+
+            for (const predator of this.getAllPredators(current.name)) {
+                if (!visited.has(predator)) {
+                    visited.add(predator);
+                    queue.push({ name: predator, distance: current.distance + 1, direction: 'predator' });
                 }
-            });
-            
-            // Backward edges: predators that eat this species (they lose food source)
-            const predators = this.graph.predecessors(currName) || [];
-            predators.forEach( neighbor => {
-                if(!visited.has(neighbor)){
-                    visited.add(neighbor);
-                    queue.push( { name: neighbor, dist: currDist + 1, direction: 'predator' } );
-                }
-            });
+            }
         }
 
-
-        // Calculate impact factor for each affected species
-        // Predators are more severely affected (lose food) than prey (lose predator)
-
-        const results = affectedSpecies.map(({ species, dist, direction }) => {
-            let impactFactor = 0; 
-            const distanceFactor = maxDist === 0 ? 1 : dist / maxDist;
-            
-            // Predators lose food source - more severe impact (reduce population more)
-            // Prey lose a predator - less severe impact (population might even increase, but use decay for simplicity)
-            if (direction === 'predator') {
-                // Predators are severely affected - inverse relationship (closer = more affected)
-                impactFactor = 1 - distanceFactor * 0.8; // 20% to 100% reduction
-            } else {
-                // Prey are less affected - they lose a predator
-                impactFactor = 1 + distanceFactor * 0.3; // 0% to 30% increase
+        simulatedGraph.nodes().forEach((nodeName) => {
+            const currentSpecies = simulatedGraph.node(nodeName);
+            if (!currentSpecies || !Array.isArray(currentSpecies.eats)) {
+                return;
             }
-            
-            return { species, impactFactor, direction };
-        });
 
-
-        // create new Graph with removed species and adjusted populations 
-        // first copy original graph
-        // then adjust populations based on impact factors
-            
-        const simulateGraph = new Graph({ directed : true });
-        this.graph.nodes().forEach( name => {
-            if(name === speciesName) return; // skip removed species
-            const species = this.graph.node(name);
-            simulateGraph.setNode(name.toLowerCase(), species);
-        });
-        this.graph.edges().forEach( edge => {
-            if(edge.v === speciesName || edge.w === speciesName) return; // skip edges of removed species
-            simulateGraph.setEdge(edge.v.toLowerCase(), edge.w.toLowerCase());
-        } );
-
-        results.forEach(({ species, impactFactor, direction }) => {
-            const initialPopulation = species.population || 0;
-            const adjustedPopulation = Math.max(0, Math.floor(initialPopulation * impactFactor));
-            console.log(`Species: ${species.name.toLowerCase()} (${direction}), Initial: ${initialPopulation}, Adjusted: ${adjustedPopulation}, Impact: ${impactFactor.toFixed(2)}`);
-
-            const simSpecies = simulateGraph.node(species.name.toLowerCase() );
-            if (simSpecies) {
-                simSpecies.population = adjustedPopulation;
-                simulateGraph.setNode(species.name.toLowerCase(), simSpecies);
-            }
-        });
-
-        return { results, simulatedGraph: simulateGraph };
-
-    }
-
-
-    findKeystoneSpecies(){
-        /*
-async function fillKeystoneSpeciesInfo() {
-    try {
-        const keystoneSpecies = await foodChain.findKeystoneSpecies();
-        const container = document.getElementById('Keystone-species-list');
-        keystoneSpecies.forEach( speciesAndImpact =>{
-            const species = speciesAndImpact.species;
-            const impactList = speciesAndImpact.impactList;
-            // <!-- <button id="Speciesi"> Speciesi </button>
-            //         <ul id="speciesi-impact" class="species-impact"> // keep css property hidden until button click
-            //             <li> speciesj : impact x% </li>
-            //         </ul> -->
-
-            const speciesBtn = document.createElement('button');
-            speciesBtn.textContent = species.name;
-            speciesBtn.className = 'keystone-species-btn';
-            container.appendChild(speciesBtn);
-
-            const impactUl = document.createElement('ul');
-            impactUl.className = 'species-impact';
-            impactUl.style.display = 'none'; // hide by default
-
-            impactUl.innerHTML = impactList.map(impact =>
-                `<li>${impact.species.name}: impact ${(impact.impactFactor * 100).toFixed(0)}%</li>`
-            ).join('');
-
-            speciesBtn.addEventListener('click', () => {  
-                impactUl.style.display = impactUl.style.display === 'none' ? 'block' : 'none';
+            simulatedGraph.setNode(nodeName, {
+                ...currentSpecies,
+                eats: normalizeEats(currentSpecies.eats).filter((prey) => prey !== targetName)
             });
-            
-            container.appendChild(impactUl);
         });
-    }
-    catch (error) {
-        console.error('Error finding keystone species:', error);
-        showNotification('Error finding keystone species: ' + error.message, 'error');
-    }
-}
-       */
-        const tarjan = new TarjanArticulationNodes(this.graph);
-        const articulationPoints = tarjan.findArticulationPoints();
 
-        const keystoneSpecies = articulationPoints.map( 
-            name => {
-                const species = this.graph.node(name);
-                const impactList = [];
+        const impactResults = impacts.map(({ name, distance, direction }) => {
+            const species = cloneSpeciesData(simulatedGraph.node(name));
+            const baselinePopulation = species.population;
+            const distanceFactor = maxDistance === 0 ? 1 : distance / maxDistance;
+            const impactFactor = direction === 'predator'
+                ? Math.max(0.2, 1 - distanceFactor * 0.8)
+                : 1 + distanceFactor * 0.3;
+            const nextPopulation = Math.max(0, Math.round(baselinePopulation * impactFactor));
 
-                // Calculate impact on prey (forward)
-                const simulateREM = this.simulateRemoval(name);
-                simulateREM.results.forEach( 
-                    ({ species: impactedSpecies, impactFactor, direction }) => {
-                        if(impactedSpecies.name.toLowerCase() !== name.toLowerCase()){
-                            impactList.push({ species: impactedSpecies, impactFactor, direction });
-                        }
-                    }
-                );
-                return { species, impactList };
-            }
+            simulatedGraph.setNode(name, {
+                ...species,
+                population: nextPopulation
+            });
+
+            return {
+                species: {
+                    ...species,
+                    population: nextPopulation
+                },
+                direction,
+                distance,
+                beforePopulation: baselinePopulation,
+                afterPopulation: nextPopulation,
+                populationLost: Math.max(0, baselinePopulation - nextPopulation),
+                impactFactor
+            };
+        });
+
+        const removedSpecies = cloneSpeciesData(simulatedGraph.node(targetName));
+        simulatedGraph.removeNode(targetName);
+
+        const changedSpecies = simulatedGraph.nodes().map((name) => cloneSpeciesData(simulatedGraph.node(name)));
+        const totalPopulationLoss = impactResults.reduce(
+            (sum, result) => sum + result.populationLost,
+            Number(removedSpecies?.population || 0)
         );
 
-        return keystoneSpecies;
+        return {
+            removedSpecies,
+            results: impactResults,
+            simulatedGraph,
+            changedSpecies,
+            totalPopulationLoss
+        };
     }
 
+    findKeystoneSpecies() {
+        const tarjan = new Tarjan(this.graph);
+        const articulationPoints = tarjan.getArticulationPoints();
+
+        return articulationPoints
+            .map((nodeName) => {
+                const simulation = this.simulateRemoval(nodeName);
+                return {
+                    species: cloneSpeciesData(this.graph.node(nodeName)),
+                    impactScore: simulation?.totalPopulationLoss || 0,
+                    affectedSpeciesCount: simulation?.results?.length || 0
+                };
+            })
+            .filter((entry) => entry.impactScore > 0)
+            .sort((left, right) => right.impactScore - left.impactScore);
+    }
+
+    findEcosystemBridges() {
+        const tarjan = new Tarjan(this.graph);
+        return tarjan.getBridges().map(([u, v]) => ({
+            predator: cloneSpeciesData(this.graph.node(u)),
+            prey: cloneSpeciesData(this.graph.node(v))
+        }));
+    }
+
+    findCycles() {
+        const colors = new Map();
+        const stack = [];
+        const stackIndex = new Map();
+        const seen = new Set();
+        const cycles = [];
+
+        const recordCycle = (cycle) => {
+            const normalized = rotateCycle(cycle);
+            const key = normalized.join('>');
+            if (!seen.has(key)) {
+                seen.add(key);
+                cycles.push(normalized);
+            }
+        };
+
+        const depthFirstSearch = (node) => {
+            colors.set(node, 1);
+            stack.push(node);
+            stackIndex.set(node, stack.length - 1);
+
+            for (const neighbor of this.graph.successors(node) || []) {
+                if (!colors.has(neighbor)) {
+                    depthFirstSearch(neighbor);
+                } else if (colors.get(neighbor) === 1) {
+                    const cycleStart = stackIndex.get(neighbor);
+                    if (Number.isInteger(cycleStart)) {
+                        recordCycle(stack.slice(cycleStart));
+                    }
+                }
+            }
+
+            stackIndex.delete(node);
+            stack.pop();
+            colors.set(node, 2);
+        };
+
+        this.graph.nodes().forEach((node) => {
+            if (!colors.has(node)) {
+                depthFirstSearch(node);
+            }
+        });
+
+        return cycles;
+    }
+
+    computeRobustnessIndex() {
+        const totalEdges = this.graph.edgeCount();
+        const robustnessByName = {};
+
+        this.graph.nodes().forEach((nodeName) => {
+            const incidentEdges = uniqueNeighbors(this.graph, nodeName).reduce((count, neighbor) => {
+                const outgoing = this.graph.hasEdge(nodeName, neighbor) ? 1 : 0;
+                const incoming = this.graph.hasEdge(neighbor, nodeName) ? 1 : 0;
+                return count + outgoing + incoming;
+            }, 0);
+
+            robustnessByName[nodeName] = totalEdges === 0
+                ? 0
+                : Number(((incidentEdges / totalEdges) * 100).toFixed(1));
+        });
+
+        return robustnessByName;
+    }
 }
 
 export { FoodChain };

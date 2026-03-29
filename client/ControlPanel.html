@@ -3,41 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EcoTrack - Ecosystem Management System</title>
+    <title>EcoTrack Control Panel</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <header>
-        <div class="container">
-            <h1>🌿 EcoTrack</h1>
-            <p class="subtitle">Ecosystem Management & Food Chain Visualization</p> 
-        <div  >
-            <!-- <a class="btn btn-success jump" href="./index.html"> Go To Home </a> 
-            <a class="btn btn-success jump" href="./SImulation.html"> Go To Simulatioon </a> -->
+    <header class="hero">
+        <div class="container hero-inner">
+            <div>
+                <p class="eyebrow">Control Panel</p>
+                <h1>Manage the live ecosystem dataset.</h1>
+                <p class="subtitle">Add or remove species through the existing Node, Express, and MongoDB stack. Dashboard tabs refresh automatically after changes.</p>
+            </div>
+            <div class="button-group hero-actions">
+                <a class="btn btn-success" href="./index.html">Back To Dashboard</a>
+                <a class="btn btn-secondary" href="./SImulation.html">Open Sandbox Simulation</a>
+            </div>
         </div>
-        
-
-        </div>
-   
     </header>
 
-    <main class="container" >
-
-        <div class="button-group"> 
-            <a class="btn btn-success" href="./index.html"> Go To Home </a> 
-            <a class="btn btn-success" href="./SImulation.html"> Go To Simulation </a>
-        </div>            
-         <section class="control-panel">
-            <h2>Control Panel</h2>
-            <div class="button-group">
-                <button id="add-animal-btn" class="btn btn-primary">➕ Add Animal</button>
-                <button id="add-plant-btn" class="btn btn-primary">🌱 Add Plant</button> 
-                <button id="remove-animal-btn" class="btn btn-primary">➖ Remove Animal</button>
-                <button id="remove-plant-btn" class="btn btn-primary">➖ Remove Plant</button>
-
+    <main class="container page-shell">
+        <section class="control-panel">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">CRUD</p>
+                    <h2>Control Panel</h2>
+                </div>
             </div>
 
-            <!-- Animal Form (hidden by default) -->
+            <div class="button-group">
+                <button id="add-animal-btn" class="btn btn-primary">Add Animal</button>
+                <button id="add-plant-btn" class="btn btn-primary">Add Plant</button>
+                <button id="update-species-btn" class="btn btn-primary">Update Species</button>
+                <button id="remove-animal-btn" class="btn btn-secondary">Remove Animal</button>
+                <button id="remove-plant-btn" class="btn btn-secondary">Remove Plant</button>
+            </div>
+
             <div id="animal-form" class="form-container" style="display: none;">
                 <h3>Add New Animal</h3>
                 <form id="animal-form-submit">
@@ -46,7 +46,7 @@
                             <label for="animal-name">Name*</label>
                             <input type="text" id="animal-name" name="animal-name" required>
                         </div>
-                        
+
                         <div class="form-group">
                             <label for="animal-type">Type*</label>
                             <select id="animal-type" name="animal-type" required>
@@ -56,17 +56,17 @@
                                 <option value="Omnivore">Omnivore</option>
                             </select>
                         </div>
-                        
+
                         <div class="form-group">
                             <label for="animal-habitat">Habitat*</label>
                             <input type="text" id="animal-habitat" name="animal-habitat" required placeholder="e.g., Forest, Grassland">
                         </div>
-                        
+
                         <div class="form-group">
                             <label for="animal-population">Population*</label>
                             <input type="number" id="animal-population" name="animal-population" required min="0" placeholder="0">
                         </div>
-                        
+
                         <div class="form-group">
                             <label for="animal-health">Health Status*</label>
                             <select id="animal-health" name="animal-health" required>
@@ -78,27 +78,20 @@
                                 <option value="excellent">Excellent</option>
                             </select>
                         </div>
-                        
+
                         <div class="form-group">
                             <label for="animal-age">Age (years)*</label>
                             <input type="number" id="animal-age" name="animal-age" required min="0" placeholder="0">
                         </div>
-<!--                         
-                        <div class="form-group full-width">
-                            <label for="animal-eats">Eats (comma-separated)*</label>
-                            <input type="text" id="animal-eats" name="animal-eats" required placeholder="e.g., Grass, Berry Bush, Rabbit">
-                            <small>Select the names of species this animal eats</small>
-                        </div> -->
 
-                         <div class="form-group">
-                            <label for="animal-eats">Eats (select)</label>
-                            <select id="animal-eats-options" name="animal-eats" required>
+                        <div class="form-group">
+                            <label for="animal-eats-options">Eats</label>
+                            <select id="animal-eats-options" name="animal-eats">
                                 <option value="">-- Select --</option>
                             </select>
                         </div>
-
                     </div>
-                    
+
                     <div class="form-actions">
                         <button type="submit" class="btn btn-success">Add Animal</button>
                         <button type="button" class="btn btn-secondary" onclick="document.getElementById('animal-form').style.display='none'">Cancel</button>
@@ -106,7 +99,6 @@
                 </form>
             </div>
 
-            <!-- Plant Form (hidden by default) -->
             <div id="plant-form" class="form-container" style="display: none;">
                 <h3>Add New Plant</h3>
                 <form id="plant-form-submit">
@@ -115,22 +107,22 @@
                             <label for="plant-name">Name*</label>
                             <input type="text" id="plant-name" name="plant-name" required>
                         </div>
-                        
+
                         <div class="form-group">
                             <label for="plant-type">Type*</label>
                             <input type="text" id="plant-type" name="plant-type" required placeholder="e.g., Producer, Tree">
                         </div>
-                        
+
                         <div class="form-group">
                             <label for="plant-habitat">Habitat</label>
-                            <input type="text" id="plant-habitat" name="plant-habitat"  placeholder="e.g., Forest, Wetland">
+                            <input type="text" id="plant-habitat" name="plant-habitat" placeholder="e.g., Forest, Wetland">
                         </div>
-                        
+
                         <div class="form-group">
                             <label for="plant-population">Population*</label>
                             <input type="number" id="plant-population" name="plant-population" required min="0" placeholder="0">
                         </div>
-                        
+
                         <div class="form-group">
                             <label for="plant-growth">Growth Stage*</label>
                             <select id="plant-growth" name="plant-growth" required>
@@ -143,13 +135,13 @@
                                 <option value="dying">Dying</option>
                             </select>
                         </div>
-                        
+
                         <div class="form-group">
                             <label for="plant-age">Age (years)*</label>
                             <input type="number" id="plant-age" name="plant-age" required min="0" placeholder="0">
                         </div>
                     </div>
-                    
+
                     <div class="form-actions">
                         <button type="submit" class="btn btn-success">Add Plant</button>
                         <button type="button" class="btn btn-secondary" onclick="document.getElementById('plant-form').style.display='none'">Cancel</button>
@@ -157,50 +149,121 @@
                 </form>
             </div>
 
-            <!-- animal remove form (hidden by default) -->
-             <div id="remove-animal-form" class="form-container" style="display: none;">
+            <div id="update-species-form" class="form-container" style="display: none;">
+                <h3>Update Species</h3>
+                <form id="update-species-form-submit">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="update-species-name">Select Species*</label>
+                            <select id="update-species-name" name="update-species-name" required>
+                                <option value="">-- Select --</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="update-species-display-name">Name</label>
+                            <input type="text" id="update-species-display-name" name="update-species-display-name" readonly>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="update-species-type">Type*</label>
+                            <input type="text" id="update-species-type" name="update-species-type" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="update-species-habitat">Habitat*</label>
+                            <input type="text" id="update-species-habitat" name="update-species-habitat" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="update-species-population">Population*</label>
+                            <input type="number" id="update-species-population" name="update-species-population" required min="0">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="update-species-age">Age (years)*</label>
+                            <input type="number" id="update-species-age" name="update-species-age" required min="0">
+                        </div>
+                    </div>
+
+                    <div id="update-animal-fields" class="form-grid" style="display: none;">
+                        <div class="form-group">
+                            <label for="update-species-health">Health Status*</label>
+                            <select id="update-species-health" name="update-species-health">
+                                <option value="">-- Select --</option>
+                                <option value="critical">Critical</option>
+                                <option value="poor">Poor</option>
+                                <option value="fair">Fair</option>
+                                <option value="healthy">Healthy</option>
+                                <option value="excellent">Excellent</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label for="update-species-eats">Eats (comma-separated)</label>
+                            <input type="text" id="update-species-eats" name="update-species-eats" placeholder="e.g., grass, rabbit">
+                        </div>
+                    </div>
+
+                    <div id="update-plant-fields" class="form-grid" style="display: none;">
+                        <div class="form-group">
+                            <label for="update-species-growth">Growth Stage*</label>
+                            <select id="update-species-growth" name="update-species-growth">
+                                <option value="">-- Select --</option>
+                                <option value="seedling">Seedling</option>
+                                <option value="mature">Mature</option>
+                                <option value="flowering">Flowering</option>
+                                <option value="fruiting">Fruiting</option>
+                                <option value="dormant">Dormant</option>
+                                <option value="dying">Dying</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-success">Save Updates</button>
+                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('update-species-form').style.display='none'">Cancel</button>
+                    </div>
+                </form>
+            </div>
+
+            <div id="remove-animal-form" class="form-container" style="display: none;">
                 <h3>Remove Animal</h3>
                 <form id="remove-animal-form-submit">
                     <div class="form-group">
-                        <label for="remove-animal-name">Select Animal to Remove*</label>
+                        <label for="remove-animal-name">Select Animal To Remove*</label>
                         <select id="remove-animal-name" name="remove-animal-name" required>
                             <option value="">-- Select --</option>
-                            
-                            <!-- forEach( animal in animalsList ) {
-                                <option value="${animal}">${animal}</option>
-                            } -->
-                                
                         </select>
                     </div>
                     <div class="form-actions">
-                        <button type="submit" class="btn btn-success">Remove Animal</button>
+                        <button type="submit" class="btn btn-warning">Remove Animal</button>
                         <button type="button" class="btn btn-secondary" onclick="document.getElementById('remove-animal-form').style.display='none'">Cancel</button>
                     </div>
                 </form>
             </div>
 
-            <!-- plant remove form (hidden by default) -->
-             <div id="remove-plant-form" class="form-container" style="display: none;">
+            <div id="remove-plant-form" class="form-container" style="display: none;">
                 <h3>Remove Plant</h3>
                 <form id="remove-plant-form-submit">
                     <div class="form-group">
-                        <label for="remove-plant-name">Select Plant to Remove*</label>
+                        <label for="remove-plant-name">Select Plant To Remove*</label>
                         <select id="remove-plant-name" name="remove-plant-name" required>
                             <option value="">-- Select --</option>
                         </select>
-                    </div>  
+                    </div>
                     <div class="form-actions">
-                        <button type="submit" class="btn btn-success">Remove Plant</button>
+                        <button type="submit" class="btn btn-warning">Remove Plant</button>
                         <button type="button" class="btn btn-secondary" onclick="document.getElementById('remove-plant-form').style.display='none'">Cancel</button>
                     </div>
                 </form>
             </div>
-
         </section>
+    </main>
 
-        <footer>
+    <footer>
         <div class="container">
-            <p>EcoTrack - Data Structures: HashMap • Queue • Directed Graph | Visualization: Cytoscape.js</p>
+            <p>EcoTrack control actions publish live change events to the dashboard and sandbox views.</p>
         </div>
     </footer>
 

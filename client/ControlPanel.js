@@ -1,464 +1,352 @@
-// import Storage from '../Storage.js';
 import CriticalPopulation from './CriticalPopulation.js';
 import { FoodChain } from './FoodChain.js';
-import { Animal, Plant } from './Species.js'; 
+import { syncEcosystemState } from './EcosystemRepository.js';
+import { broadcastEcosystemChanged } from './EcosystemEvents.js';
 import ApiService from './ApiService.js';
-// const storage = new Storage();
+
 const criticalPopulation = new CriticalPopulation();
 const foodChain = new FoodChain();
 
-let addAnimalBtn, addPlantBtn , removeAnimalBtn, removePlantBtn ;  
-let animalForm, plantForm , removeAnimalForm, removePlantForm ; 
-let animalEatsOptions ;
-document.addEventListener('DOMContentLoaded', () => {
+const dom = {};
+let cachedSpecies = [];
+
+document.addEventListener('DOMContentLoaded', async () => {
     initializeDOM();
     setupEventListeners();
-    // loadSampleData(); 
-    loadFromDatabase();
+    await refreshLocalState();
 });
 
-
 function initializeDOM() {
-    addAnimalBtn = document.getElementById('add-animal-btn');
-    addPlantBtn = document.getElementById('add-plant-btn'); 
-    removeAnimalBtn = document.getElementById('remove-animal-btn');
-    removePlantBtn = document.getElementById('remove-plant-btn');
+    dom.addAnimalBtn = document.getElementById('add-animal-btn');
+    dom.addPlantBtn = document.getElementById('add-plant-btn');
+    dom.updateSpeciesBtn = document.getElementById('update-species-btn');
+    dom.removeAnimalBtn = document.getElementById('remove-animal-btn');
+    dom.removePlantBtn = document.getElementById('remove-plant-btn');
 
-    animalForm = document.getElementById('animal-form');
-    plantForm = document.getElementById('plant-form'); 
-    removeAnimalForm = document.getElementById('remove-animal-form');
-    removePlantForm = document.getElementById('remove-plant-form');
+    dom.animalForm = document.getElementById('animal-form');
+    dom.plantForm = document.getElementById('plant-form');
+    dom.updateSpeciesForm = document.getElementById('update-species-form');
+    dom.removeAnimalForm = document.getElementById('remove-animal-form');
+    dom.removePlantForm = document.getElementById('remove-plant-form');
 
-    animalEatsOptions = document.getElementById('animal-eats-options');
+    dom.animalEatsSelect = document.getElementById('animal-eats-options');
+    dom.updateSpeciesSelect = document.getElementById('update-species-name');
+    dom.updateSpeciesDisplayName = document.getElementById('update-species-display-name');
+    dom.updateSpeciesType = document.getElementById('update-species-type');
+    dom.updateSpeciesHabitat = document.getElementById('update-species-habitat');
+    dom.updateSpeciesPopulation = document.getElementById('update-species-population');
+    dom.updateSpeciesAge = document.getElementById('update-species-age');
+    dom.updateAnimalFields = document.getElementById('update-animal-fields');
+    dom.updatePlantFields = document.getElementById('update-plant-fields');
+    dom.updateSpeciesHealth = document.getElementById('update-species-health');
+    dom.updateSpeciesGrowth = document.getElementById('update-species-growth');
+    dom.updateSpeciesEats = document.getElementById('update-species-eats');
+    dom.removeAnimalSelect = document.getElementById('remove-animal-name');
+    dom.removePlantSelect = document.getElementById('remove-plant-name');
 
-
+    dom.animalFormSubmit = document.getElementById('animal-form-submit');
+    dom.plantFormSubmit = document.getElementById('plant-form-submit');
+    dom.updateSpeciesFormSubmit = document.getElementById('update-species-form-submit');
+    dom.removeAnimalFormSubmit = document.getElementById('remove-animal-form-submit');
+    dom.removePlantFormSubmit = document.getElementById('remove-plant-form-submit');
 }
-
 
 function setupEventListeners() {
-    addAnimalBtn.addEventListener('click', () => toggleForm('animal'));
-    addPlantBtn.addEventListener('click', () => toggleForm('plant'));
+    dom.addAnimalBtn.addEventListener('click', () => toggleForm('animal'));
+    dom.addPlantBtn.addEventListener('click', () => toggleForm('plant'));
+    dom.updateSpeciesBtn.addEventListener('click', () => toggleForm('update-species'));
+    dom.removeAnimalBtn.addEventListener('click', () => toggleForm('remove-animal'));
+    dom.removePlantBtn.addEventListener('click', () => toggleForm('remove-plant'));
 
-    removeAnimalBtn.addEventListener('click', () => toggleForm('remove-animal'));
-    removePlantBtn.addEventListener('click', () => toggleForm('remove-plant'));
-     
-    document.getElementById('animal-form-submit').addEventListener('submit', handleAnimalSubmit);
-    document.getElementById('plant-form-submit').addEventListener('submit', handlePlantSubmit);
-    document.getElementById('remove-animal-form-submit').addEventListener('submit', handleRemoveAnimalSubmit);
-    document.getElementById('remove-plant-form-submit').addEventListener('submit', handleRemovePlantSubmit);
-
-    // animalEatsOptions.addEventListener('change', showOptionsForEats);
-
+    dom.animalFormSubmit.addEventListener('submit', handleAnimalSubmit);
+    dom.plantFormSubmit.addEventListener('submit', handlePlantSubmit);
+    dom.updateSpeciesFormSubmit.addEventListener('submit', handleUpdateSpeciesSubmit);
+    dom.removeAnimalFormSubmit.addEventListener('submit', handleRemoveAnimalSubmit);
+    dom.removePlantFormSubmit.addEventListener('submit', handleRemovePlantSubmit);
+    dom.updateSpeciesSelect.addEventListener('change', handleUpdateSpeciesSelection);
 }
 
-async function toggleForm(type) {
-    if (type === 'animal') {
-        animalForm.style.display = animalForm.style.display === 'none' ? 'block' : 'none';
-        plantForm.style.display = 'none';
-
-        if(animalForm.style.display === 'block'){
-            await showOptionsForEats();
-        }
-
-    } else if (type === 'plant') {
-        plantForm.style.display = plantForm.style.display === 'none' ? 'block' : 'none';
-        animalForm.style.display = 'none';
+async function refreshLocalState() {
+    try {
+        const { species } = await syncEcosystemState(foodChain, criticalPopulation);
+        cachedSpecies = species;
+        populateAnimalEats();
+        populateUpdateSpeciesSelector();
+        populateRemovalSelectors();
+    } catch (error) {
+        showNotification(`Failed to load species data: ${error.message}`, 'error');
     }
-    else if (type === 'remove-animal') {
-        removeAnimalForm.style.display = removeAnimalForm.style.display === 'none' ? 'block' : 'none';
-        removePlantForm.style.display = 'none';
-        let removeOption = document.getElementById('remove-animal-name');
-        removeOption.innerHTML = '<option value="">-- Select --</option>';
-        
-        try {
-            const allSpecies = await ApiService.getAllSpecies();  // fetch from MongoDB
-            if (allSpecies.length === 0) {
-                return;
-            }
-
-            allSpecies
-            .filter(s => s.eats && Array.isArray(s.eats) )
-            .forEach(animal => {
-                const option = document.createElement('option');
-                option.value = animal.name;
-                option.textContent = animal.name;
-                removeOption.appendChild(option);
-            });
-
-        }
-        catch(err){
-            console.log(' error removing animal '+err.message);
-        }
-
-    }   
-    else if (type === 'remove-plant') {
-        removePlantForm.style.display = removePlantForm.style.display === 'none' ? 'block' : 'none';
-        removeAnimalForm.style.display = 'none';
-        let removeOption = document.getElementById('remove-plant-name');
-        removeOption.innerHTML = '<option value="">-- Select --</option>';
-        
-         try {
-            const allSpecies = await ApiService.getAllSpecies();  // fetch from MongoDB
-            if (allSpecies.length === 0) {
-                // await seedSampleData();   // only seed if DB is empty
-                return;
-            }
-
-        // const allSpecies = storage.getAllSpecies();
-
-            allSpecies
-            .filter(s => !s.eats && !Array.isArray(s.eats) === false )
-            .forEach(plant => {
-                const option = document.createElement('option');
-                option.value = plant.name;
-                option.textContent = plant.name;
-                removeOption.appendChild(option);
-            });
-
-        }
-        catch(err){
-            console.log(' error removing animal '+err.message);
-        }
-
-    }
-
 }
 
-async function showOptionsForEats() {
-    let html = `<select id="animal-eats-options" name="animal-eats" required>
-                <option value="">-- Select --</option>
-                </select>;`
+function hideForms() {
+    dom.animalForm.style.display = 'none';
+    dom.plantForm.style.display = 'none';
+    dom.updateSpeciesForm.style.display = 'none';
+    dom.removeAnimalForm.style.display = 'none';
+    dom.removePlantForm.style.display = 'none';
+}
 
-    animalEatsOptions.innerHTML = `<select id="animal-eats-options" name="animal-eats" required>
-                <option value="">-- Select --</option>
-                </select>;`
+function toggleForm(type) {
+    const targetMap = {
+        animal: dom.animalForm,
+        plant: dom.plantForm,
+        'update-species': dom.updateSpeciesForm,
+        'remove-animal': dom.removeAnimalForm,
+        'remove-plant': dom.removePlantForm
+    };
+
+    const target = targetMap[type];
+    const nextState = target.style.display === 'none' || !target.style.display ? 'block' : 'none';
+    hideForms();
+    target.style.display = nextState;
+
+    if (nextState === 'block') {
+        populateAnimalEats();
+        populateUpdateSpeciesSelector();
+        populateRemovalSelectors();
+    }
+}
+
+function populateAnimalEats() {
+    dom.animalEatsSelect.innerHTML = '<option value="">-- Select --</option>';
+
+    cachedSpecies.forEach((species) => {
+        const option = document.createElement('option');
+        option.value = species.name;
+        option.textContent = `${species.name} (${species.speciesType})`;
+        dom.animalEatsSelect.appendChild(option);
+    });
+}
+
+function populateRemovalSelectors() {
+    dom.removeAnimalSelect.innerHTML = '<option value="">-- Select --</option>';
+    dom.removePlantSelect.innerHTML = '<option value="">-- Select --</option>';
+
+    cachedSpecies.forEach((species) => {
+        const option = document.createElement('option');
+        option.value = species.name;
+        option.textContent = species.name;
+
+        if (species.healthStatus) {
+            dom.removeAnimalSelect.appendChild(option);
+        } else {
+            dom.removePlantSelect.appendChild(option);
+        }
+    });
+}
+
+function populateUpdateSpeciesSelector() {
+    const previousValue = dom.updateSpeciesSelect.value;
+    dom.updateSpeciesSelect.innerHTML = '<option value="">-- Select --</option>';
+
+    cachedSpecies.forEach((species) => {
+        const option = document.createElement('option');
+        option.value = species.name;
+        option.textContent = species.name;
+        dom.updateSpeciesSelect.appendChild(option);
+    });
+
+    if (previousValue && cachedSpecies.some((species) => species.name === previousValue)) {
+        dom.updateSpeciesSelect.value = previousValue;
+        fillUpdateForm(previousValue);
+    } else {
+        resetUpdateFormFields();
+    }
+}
+
+function handleUpdateSpeciesSelection(event) {
+    fillUpdateForm(event.target.value);
+}
+
+function resetUpdateFormFields() {
+    dom.updateSpeciesDisplayName.value = '';
+    dom.updateSpeciesType.value = '';
+    dom.updateSpeciesHabitat.value = '';
+    dom.updateSpeciesPopulation.value = '';
+    dom.updateSpeciesAge.value = '';
+    dom.updateSpeciesHealth.value = '';
+    dom.updateSpeciesGrowth.value = '';
+    dom.updateSpeciesEats.value = '';
+    dom.updateAnimalFields.style.display = 'none';
+    dom.updatePlantFields.style.display = 'none';
+}
+
+function fillUpdateForm(speciesName) {
+    const species = cachedSpecies.find((item) => item.name === speciesName);
+    if (!species) {
+        resetUpdateFormFields();
+        return;
+    }
+
+    dom.updateSpeciesDisplayName.value = species.name;
+    dom.updateSpeciesType.value = species.speciesType || '';
+    dom.updateSpeciesHabitat.value = species.habitat || '';
+    dom.updateSpeciesPopulation.value = Number(species.population || 0);
+    dom.updateSpeciesAge.value = Number(species.age || 0);
+
+    if (species.healthStatus) {
+        dom.updateAnimalFields.style.display = 'grid';
+        dom.updatePlantFields.style.display = 'none';
+        dom.updateSpeciesHealth.value = species.healthStatus || '';
+        dom.updateSpeciesEats.value = Array.isArray(species.eats) ? species.eats.join(', ') : '';
+        dom.updateSpeciesGrowth.value = '';
+    } else {
+        dom.updateAnimalFields.style.display = 'none';
+        dom.updatePlantFields.style.display = 'grid';
+        dom.updateSpeciesGrowth.value = species.growthStage || '';
+        dom.updateSpeciesHealth.value = '';
+        dom.updateSpeciesEats.value = '';
+    }
+}
+
+async function handleAnimalSubmit(event) {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+
+    const animalData = {
+        name: formData.get('animal-name'),
+        speciesType: formData.get('animal-type'),
+        habitat: formData.get('animal-habitat'),
+        population: Number(formData.get('animal-population')),
+        healthStatus: formData.get('animal-health'),
+        age: Number(formData.get('animal-age')),
+        eats: [formData.get('animal-eats')].filter(Boolean)
+    };
 
     try {
-        const allSpecies = await ApiService.getAllSpecies();  // fetch from MongoDB
-        if (allSpecies.length === 0) {
-            animalEatsOptions.innerHTML = html;
-            return;
-        }
-
-        allSpecies.forEach( species => {
-            const option = document.createElement('option');
-            option.value = species.name;
-            option.textContent =`${species.name} (${species.speciesType || 'Unknown'})`;
-            animalEatsOptions.appendChild(option);
-        })
-
-    }
-    catch(err){
-        console.log(' error showing options for eats '+err.message);
+        await ApiService.addSpecies(animalData);
+        await refreshLocalState();
+        broadcastEcosystemChanged('animal-added');
+        event.target.reset();
+        hideForms();
+        showNotification(`Animal "${animalData.name}" added`);
+    } catch (error) {
+        showNotification(error.message, 'error');
     }
 }
-async function handleAnimalSubmit(e) {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    
-    const animalData = { 
-     name : formData.get('animal-name'),
-     speciesType : formData.get('animal-type'),
-     habitat : formData.get('animal-habitat'),
-     population :parseInt(formData.get('animal-population')),
-     healthStatus : formData.get('animal-health'),
-     age : parseInt(formData.get('animal-age')),
-     eats : formData.get('animal-eats').split(',').map(item => item.trim()).filter(item => item),
-    }
-    
-    try {
-        await ApiService.addSpecies(animalData);   // ← save to MongoDB
-        const animal = new Animal(           // ← update local graph
-          animalData.name, animalData.speciesType,
-          animalData.habitat, animalData.population,
-          animalData.healthStatus, animalData.age,
-          animalData.eats
-        );
-        foodChain.addSpecies(animal);
 
-        if (animalData.population < 30 || animalData.healthStatus.toLowerCase() === 'critical') {
-            criticalPopulation.enqueue(animal);
-         }
+async function handlePlantSubmit(event) {
+    event.preventDefault();
+    const formData = new FormData(event.target);
 
-         e.target.reset();
-         animalForm.style.display = 'none';  
-        showNotification(`Animal "${animalData.name}" added!`);
-    } catch (err) {
-        showNotification(err.message, 'error');
-    }
-
-}
-
-async function handlePlantSubmit(e) {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    
     const plantData = {
-     name : formData.get('plant-name'),
-     speciesType : formData.get('plant-type'),
-     habitat : formData.get('plant-habitat'),
-     population :parseInt(formData.get('plant-population')),
-     growthStage : formData.get('plant-growth'),
-     age : parseInt(formData.get('plant-age'))
-    }
-    
-    try {
-        await ApiService.addSpecies(plantData);   // ← save to MongoDB
-        const plant  = new Plant(           // ← update local graph
-          plantData.name, plantData.speciesType,
-          plantData.habitat, plantData.population,
-          plantData.growthStage, plantData.age
-        );
-        foodChain.addSpecies(plant);
-
-        if (plantData.population < 30 || plantData.growthStage.toLowerCase() === 'dying') {
-            criticalPopulation.enqueue(plant);
-         }
-
-         e.target.reset();
-         plantForm.style.display = 'none';  
-        showNotification(`Plant "${plantData.name}" added!`);
-    } catch (err) {
-        showNotification(err.message, 'error');
-    }   
-
-    // const name = formData.get('plant-name');
-    // const speciesType = formData.get('plant-type');
-    // const habitat = formData.get('plant-habitat');
-    // const population = parseInt(formData.get('plant-population'));
-    // const growthStage = formData.get('plant-growth');
-    // const age = parseInt(formData.get('plant-age'));
-    
-    // const plant = new Plant(name, speciesType, habitat, population, growthStage, age);
-    
-    // storage.addSpecies(plant);
-    // foodChain.addSpecies(plant);
-    
-    // if (population < 30 || growthStage.toLowerCase() === 'dying') {
-    //     criticalPopulation.enqueue(plant);
-    // }
-    // e.target.reset();
-    // plantForm.style.display = 'none';
-     
-    // showNotification(`Plant "${name}" added successfully!`);
-}
-async function handleRemoveAnimalSubmit(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(e.target);
-    const name = formData.get('animal-name');
-    
-    if (!name) {
-        showNotification('Please enter animal name', 'error');
-        return;
-    }
-    
-    // const species = storage.getSpecies(name);
+        name: formData.get('plant-name'),
+        speciesType: formData.get('plant-type'),
+        habitat: formData.get('plant-habitat'),
+        population: Number(formData.get('plant-population')),
+        growthStage: formData.get('plant-growth'),
+        age: Number(formData.get('plant-age'))
+    };
 
     try {
-        const remove = await ApiService.removeSpecies(name) ; 
-        foodChain.removeSpecies(name);
-        criticalPopulation.removeSpecies(name);
-        
-        showNotification(`${name} removed successfully!`);
-        e.target.reset();
-        removeAnimalForm.style.display = 'none';
+        await ApiService.addSpecies(plantData);
+        await refreshLocalState();
+        broadcastEcosystemChanged('plant-added');
+        event.target.reset();
+        hideForms();
+        showNotification(`Plant "${plantData.name}" added`);
+    } catch (error) {
+        showNotification(error.message, 'error');
     }
-    catch(err){
-        console.log('err remove animal submit () '+err.message);
-    }
-
-    // if (!species) {
-    //     showNotification(`Animal "${name}" not found`, 'error');
-    //     return;
-    // }
-    
-    // Remove from all data structures
-    // storage.removeSpecies(name);
-    // foodChain.removeSpecies(name);
-    // criticalPopulation.removeSpecies(name);
-    
-    // showNotification(`${name} removed successfully!`);
-    // e.target.reset();
-    // removeAnimalForm.style.display = 'none';
 }
 
-async function handleRemovePlantSubmit(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(e.target);
-    const name = formData.get('plant-name');
-    
+async function handleRemoveAnimalSubmit(event) {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    const name = formData.get('remove-animal-name');
+
     if (!name) {
-        showNotification('Please enter plant name', 'error');
+        showNotification('Select an animal to remove', 'error');
         return;
     }
-    
-    // const species = storage.getSpecies(name);
-
-    // if (!species) {
-    //     showNotification(`Plant "${name}" not found`, 'error');
-    //     return;
-    // }
 
     try {
-        const remove = await ApiService.removeSpecies(name) ; 
-        foodChain.removeSpecies(name);
-        criticalPopulation.removeSpecies(name);
-        
-        showNotification(`${name} removed successfully!`);
-        e.target.reset();
-        removePlantForm.style.display = 'none';
+        await ApiService.removeSpecies(name);
+        await refreshLocalState();
+        broadcastEcosystemChanged('animal-removed');
+        event.target.reset();
+        hideForms();
+        showNotification(`${name} removed`);
+    } catch (error) {
+        showNotification(error.message, 'error');
     }
-    catch(err){
-        console.log('err remove animal submit () '+err.message);
+}
+
+async function handleUpdateSpeciesSubmit(event) {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    const name = formData.get('update-species-name');
+    const currentSpecies = cachedSpecies.find((species) => species.name === name);
+
+    if (!currentSpecies) {
+        showNotification('Select a species to update', 'error');
+        return;
     }
 
+    const payload = {
+        speciesType: formData.get('update-species-type'),
+        habitat: formData.get('update-species-habitat'),
+        population: Number(formData.get('update-species-population')),
+        age: Number(formData.get('update-species-age'))
+    };
 
-    
-    // Remove from all data structures
-    // storage.removeSpecies(name);
-    // foodChain.removeSpecies(name);
-    // criticalPopulation.removeSpecies(name);
-    
-    // showNotification(`${name} removed successfully!`);
-    // e.target.reset();
-    // removePlantForm.style.display = 'none';
+    if (currentSpecies.healthStatus) {
+        payload.healthStatus = formData.get('update-species-health');
+        payload.eats = String(formData.get('update-species-eats') || '')
+            .split(',')
+            .map((item) => item.trim())
+            .filter(Boolean);
+    } else {
+        payload.growthStage = formData.get('update-species-growth');
+    }
+
+    try {
+        await ApiService.updateSpecies(name, payload);
+        await refreshLocalState();
+        broadcastEcosystemChanged('species-updated');
+        fillUpdateForm(name);
+        showNotification(`${name} updated`);
+    } catch (error) {
+        showNotification(error.message, 'error');
+    }
+}
+
+async function handleRemovePlantSubmit(event) {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    const name = formData.get('remove-plant-name');
+
+    if (!name) {
+        showNotification('Select a plant to remove', 'error');
+        return;
+    }
+
+    try {
+        await ApiService.removeSpecies(name);
+        await refreshLocalState();
+        broadcastEcosystemChanged('plant-removed');
+        event.target.reset();
+        hideForms();
+        showNotification(`${name} removed`);
+    } catch (error) {
+        showNotification(error.message, 'error');
+    }
 }
 
 function showNotification(message, type = 'success') {
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
     notification.textContent = message;
-    
     document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.classList.add('show');
-    }, 10);
-    
+
+    setTimeout(() => notification.classList.add('show'), 10);
     setTimeout(() => {
         notification.classList.remove('show');
         setTimeout(() => notification.remove(), 300);
-    }, 3000);
+    }, 3200);
 }
 
-
-// function loadSampleData() {
-//     const saved = localStorage.getItem('ecotrack-species');
-//     if (saved && saved !== '[]') {
-//         console.log('Using existing data from localStorage');
-        
-//         // Clear existing foodChain and criticalPopulation
-//         // They may have stale data
-//         storage.getAllSpecies().forEach(species => {
-//             foodChain.addSpecies(species);
-//             if (species.population < 30) {
-//                 criticalPopulation.enqueue(species);
-//             }
-//         });
-        
-//         showNotification('Loaded existing ecosystem data');
-//         return;
-//     }
-    
-//     const grass = new Plant('grass', 'Producer', 'Grassland', 500, 'mature', 2);
-//         const berryBush = new Plant('berry bush', 'Producer', 'Forest', 200, 'fruiting', 5);
-//         const oak = new Plant('oak tree', 'Producer', 'Forest', 150, 'mature', 50);
-        
-//         [grass, berryBush, oak].forEach(plant => {
-//             storage.addSpecies(plant);
-//             foodChain.addSpecies(plant);
-//         });
-         
-//         const rabbit = new Animal('rabbit', 'Herbivore', 'Grassland', 120, 'healthy', 3, ['grass', 'berry bush']);
-//         const deer = new Animal('deer', 'Herbivore', 'Forest', 80, 'healthy', 5, ['grass', 'berry bush', 'oak tree']);
-//         const fox = new Animal('fox', 'Carnivore', 'Forest', 25, 'critical', 4, ['rabbit']);
-//         const wolf = new Animal('wolf', 'Carnivore', 'Forest', 15, 'critical', 6, ['rabbit', 'deer']);
-//         const hawk = new Animal('hawk', 'Carnivore', 'Sky', 20, 'critical', 3, ['rabbit']);
-        
-//         [rabbit, deer, fox, wolf, hawk].forEach(animal => {
-//             storage.addSpecies(animal);
-//             foodChain.addSpecies(animal);
-//             if (animal.population < 30) {
-//                 criticalPopulation.enqueue(animal);
-//             }
-//         });
-     
-//     showNotification('Sample ecosystem data loaded');
-// }
-// Replace loadSampleData() with:
-// ...existing code...
-async function seedSampleData() {
-  const samples = [
-    { name: 'grass', speciesType: 'Producer', habitat: 'Grassland', population: 500, growthStage: 'mature', age: 2 },
-    { name: 'berry bush', speciesType: 'Producer', habitat: 'Forest', population: 200, growthStage: 'fruiting', age: 5 },
-    { name: 'oak tree', speciesType: 'Producer', habitat: 'Forest', population: 150, growthStage: 'mature', age: 50 },
-    { name: 'rabbit', speciesType: 'Herbivore', habitat: 'Grassland', population: 120, healthStatus: 'healthy', age: 3, eats: ['grass', 'berry bush'] },
-    { name: 'deer', speciesType: 'Herbivore', habitat: 'Forest', population: 80, healthStatus: 'healthy', age: 5, eats: ['grass', 'berry bush', 'oak tree'] },
-    { name: 'fox', speciesType: 'Carnivore', habitat: 'Forest', population: 25, healthStatus: 'critical', age: 4, eats: ['rabbit'] },
-    { name: 'wolf', speciesType: 'Carnivore', habitat: 'Forest', population: 15, healthStatus: 'critical', age: 6, eats: ['rabbit', 'deer'] },
-    { name: 'hawk', speciesType: 'Carnivore', habitat: 'Sky', population: 20, healthStatus: 'critical', age: 3, eats: ['rabbit'] }
-  ];
-
-  for (const s of samples) {
-    try {
-      await ApiService.addSpecies(s);
-      let species;
-      if (s.eats) {
-        species = new Animal(s.name, s.speciesType, s.habitat, s.population, s.healthStatus, s.age, s.eats);
-      } else {
-        species = new Plant(s.name, s.speciesType, s.habitat, s.population, s.growthStage, s.age);
-      }
-      foodChain.addSpecies(species);
-      if (s.population < 30) criticalPopulation.enqueue(species);
-    } catch (e) {
-      console.error(`Failed to seed ${s.name}:`, e);
-    }
-  }
-  updateSpeciesSelect();
-  showNotification('Sample data seeded');
-}
-
-async function loadFromDatabase() {
-  try {
-    const speciesList = await ApiService.getAllSpecies();  // fetch from MongoDB
-
-    if (speciesList.length === 0) {
-      await seedSampleData();   // only seed if DB is empty
-      return;
-    }
-
-    // Rebuild in-memory graph from DB data
-    speciesList.forEach(data => {
-      let species;
-      if (data.eats) {
-        species = new Animal(
-          data.name, data.speciesType, data.habitat,
-          data.population, data.healthStatus, data.age,
-          data.eats
-        );
-      } else {
-        species = new Plant(
-          data.name, data.speciesType, data.habitat,
-          data.population, data.growthStage, data.age
-        );
-      }
-      foodChain.addSpecies(species);       // rebuild graph
-      if (species.population < 30) {
-        criticalPopulation.enqueue(species); // rebuild queue
-      }
-    });
-
-    // updateDashboard();
-    showNotification('Ecosystem loaded from database');
-  } catch (err) {
-    showNotification('Failed to load data: ' + err.message, 'error');
-  }
-}
- 
 window.ecoTrack = {
-    // storage,
     criticalPopulation,
-    foodChain, 
+    foodChain
 };

@@ -6,6 +6,11 @@ class CriticalPopulation {
         this.speciesInQueue = new Set();
     }
 
+    clear() {
+        this.queue = new Heap((a, b) => a.population - b.population);
+        this.speciesInQueue.clear();
+    }
+
     enqueue(species) {
         if (!species || !species.name) {
             console.warn('Invalid species for enqueue:', species);

@@ -3,91 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EcoTrack - Ecosystem Management System</title>
+    <title>EcoTrack Sandbox Simulation</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <header>
-        <div class="container">
-            <h1>🌿 EcoTrack</h1>
-            <p class="subtitle">Ecosystem Management & Food Chain Visualization</p> 
-        <div  >   
+    <header class="hero">
+        <div class="container hero-inner">
+            <div>
+                <p class="eyebrow">Sandbox Mode</p>
+                <h1>Simulate species removal without touching the live ecosystem.</h1>
+                <p class="subtitle">Every run deep-clones the current graph and species state. Nothing is written back until you explicitly apply the scenario.</p>
+            </div>
+            <div class="button-group hero-actions">
+                <a class="btn btn-success" href="./index.html">Back To Dashboard</a>
+                <a class="btn btn-secondary" href="./ControlPanel.html">Open Control Panel</a>
+                <button id="visualize-btn" class="btn btn-primary">Refresh Live Snapshot</button>
+            </div>
+        </div>
     </header>
 
-     <main class="container">
-        
-            <div class="button-group"> 
-                <a class="btn btn-success" href="./index.html"> Go To Home </a> 
-                <a class="btn btn-success" href="./ControlPanel.html"> Go To Control Panel </a>
-                <button id="visualize-btn" class="btn btn-success">📊 Visualize Food Chain</button>
-            </div>
-
-         <!-- Simulation Section -->
+    <main class="container page-shell">
         <section class="simulation-section">
-            <h2>Ecosystem Simulation</h2>
-            <div class="simulation-controls">
-                <div class="form-group">
-                    <label for="species-select">Select Species to Remove:</label>
-                    <select id="species-select" class="species-dropdown">
-                        <option value="">-- Select Species --</option>
-                    </select>
+            <div class="simulation-grid">
+                <div class="simulation-controls">
+                    <h2>Species Removal Sandbox</h2>
+                    <div class="form-group">
+                        <label for="species-select">Select Species To Remove</label>
+                        <select id="species-select">
+                            <option value="">-- Select Species --</option>
+                        </select>
+                    </div>
+                    <div class="button-group">
+                        <button id="simulate-btn" class="btn btn-warning">Run Sandbox Simulation</button>
+                        <button id="apply-btn" class="btn btn-primary" disabled>Apply To Ecosystem</button>
+                    </div>
+                    <div id="sandbox-status" class="sandbox-status">
+                        Sandbox is idle. The live ecosystem remains unchanged.
+                    </div>
+                    <div id="simulation-results" class="sandbox-card">
+                        <h3>Impact Summary</h3>
+                        <p>Run a sandbox simulation to preview the removal impact.</p>
+                    </div>
                 </div>
-                <button id="simulate-btn" class="btn btn-warning">⚠️ Simulate Removal</button>
-            </div> 
-            <div id="simulation-results" class="simulation-results" style="display: none;">
-                <!-- Results populated by JS -->
-            </div>
-        </section>
 
-        <!-- Visualization Section -->
-        <section class="visualization-section">
-            <h2>Food Chain Visualization</h2>
-            <div class="visualization-info">
-                <p>
-                    <span class="legend-item"><span class="color-box stable"> </span> Stable (≥30) </span>
-                    <span class="legend-item"><span class="color-box critical"></span> Critical (&lt;30)</span>
-                    <span class="legend-item"><span class="color-box extinct"></span> Extinct (0)</span>
-                </p>
-            </div>
-            <div id="cymain" class="cytoscape-container">
-                <p>Click "Visualize Food Chain" to see the ecosystem graph</p>
-
-                <div class="cy-placeholder">
-
-                    <div id="cy">
-
+                <div class="sandbox-card">
+                    <h2>Keystone Ranking</h2>
+                    <div id="keystone-panel">
+                        <p>Loading keystone species...</p>
                     </div>
                 </div>
             </div>
-
- 
         </section>
 
         <section class="visualization-section">
-            <h2> Keystone species </h2>
-            <div class="Keystone-species-info" id="Keystone-species-info">
-             
-                    <p id="Keystone-species-info"> Keystone species are those that have a disproportionately large impact on their ecosystem relative to their abundance. </p>
-                    <p id="Keystone-species-info"> They play a critical role in maintaining the structure and function of the ecosystem, and their removal can lead to significant changes in the ecosystem's dynamics. </p>
-                <button class="Keystone-species-show-button" id="Keystone-species-show-button"> Show Keystone Species </button>
-                
-                <div class="Keystone-species-list" id="Keystone-species-list">
-                    <!-- <button id="Speciesi"> Speciesi </button>
-                    <ul id="speciesi-impact" class="species-impact"> // keep css property hidden until button click
-                        <li> speciesj : impact x% </li>
-                    </ul> -->
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">Live Vs Sandbox</p>
+                    <h2>Food Web View</h2>
                 </div>
-
-                <!-- // similarly add for speciesj and speciesk in simulation.js  -->
-
             </div>
+            <div id="cy" class="cytoscape-stage"></div>
         </section>
-
     </main>
 
     <footer>
         <div class="container">
-            <p> EcoTrack - Data Structures: HashMap • Queue • Directed Graph | Visualization: Cytoscape.js </p>
+            <p>EcoTrack sandbox applies only after approval through the existing Express + MongoDB API.</p>
         </div>
     </footer>
 

@@ -21,11 +21,11 @@
 - [ ] On page load, rebuild CriticalPopulation heap from fetched species
 
 ### Error Handling
-- [ ] Wrap all ApiService fetch calls in try/catch
+- [x] Wrap all ApiService fetch calls in try/catch
 - [ ] Show user-facing error banner (not console.error) on network failure
 
 ### Fix Tarjan Articulation Point Bugs
-- [ ] Rewrite `findKeystoneSpecies()` using corrected DFS-coloring: `disc[]`, `low[]`, `parent[]`
+- [x] Rewrite `findKeystoneSpecies()` using corrected DFS-coloring: `disc[]`, `low[]`, `parent[]`
 - [ ] Run against a manually constructed test graph (5 nodes, known articulation points) before wiring to UI
 - [ ] Note: run Tarjan on the **undirected** version of the food web — structural integrity, not direction, determines articulation points
 
@@ -74,15 +74,15 @@
 ## P2 — Graph Algorithms
 
 ### Cycle Detection
-- [ ] Implement `detectCycles(graph)` — DFS with 3-color marking (0 = unvisited, 1 = in-stack, 2 = done)
-- [ ] Returns array of cycles; each cycle is an ordered array of species names e.g. `['wolf', 'deer', 'grass']`
+- [x] ~~Implement `detectCycles(graph)~~` — DFS with 3-color marking (0 = unvisited, 1 = in-stack, 2 = done)
+- [x] ~~Returns array of cycles~~; each cycle is an ordered array of species names e.g. `['wolf', 'deer', 'grass']`
 - [ ] On food chain page: show warning panel listing each detected cycle as `A → B → C → A`
 - [ ] In Cytoscape: give cycle-member nodes an orange border
 - [ ] Ecological note rendered in UI: "Feedback loops cause population oscillation — expected behavior in Lotka-Volterra"
 
 ### Keystone Species Ranking
-- [ ] After Tarjan fix: for each articulation point, call `simulateRemoval(name)` and record total population lost across all species
-- [ ] Sort articulation points by total population loss descending
+- [x] After Tarjan fix: for each articulation point, call `simulateRemoval(name)` and record total population lost across all species
+- [x] Sort articulation points by total population loss descending
 - [ ] Display ranked table: rank | name | impact score (total population units lost)
 - [ ] In Cytoscape: highlight keystone nodes with red border
 - [ ] Add color legend toggle in graph panel (red = keystone, orange = cycle member, default = normal)

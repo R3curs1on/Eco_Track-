@@ -1,125 +1,139 @@
-
 import cytoscape from 'cytoscape';
- 
-/**
- * Renders a graphlib directed graph using Cytoscape.js
- * @param {Graph} graph - graphlib Graph instance
- * @param {string} containerId - DOM container id (default: 'cy')
- */
-export function renderCytoScape(graph, containerId = 'cy') {
-    
-    if (!graph) {
-        console.error('renderCytoScape: graph is null or undefined');
-        return null;
-    }
+import { getSpeciesStatus, inferTrophicLevel, toTitleCase } from './speciesUtils.js';
 
-    if (!graph.nodes || !graph.edges || !graph.node) {
-        console.error('renderCytoScape: graph is missing required methods (nodes, edges, node)');
-        return null;
-    }
+function buildElements(graph, analysis = {}) {
+    const cycleMembers = analysis.cycleMembers || new Set();
+    const keystoneSet = analysis.keystoneSet || new Set();
+    const robustnessByName = analysis.robustnessByName || {};
 
+    const nodes = graph.nodes().map((name) => {
+        const species = graph.node(name);
+        const prey = graph.successors(name) || [];
+        const predators = graph.predecessors(name) || [];
+
+        return {
+            data: {
+                id: name,
+                label: toTitleCase(species.name),
+                population: Number(species.population || 0),
+                speciesType: toTitleCase(species.speciesType),
+                status: getSpeciesStatus(species),
+                trophicLevel: inferTrophicLevel(species),
+                isCycleMember: cycleMembers.has(name),
+                isKeystone: keystoneSet.has(name),
+                prey: prey.join(', '),
+                predators: predators.join(', '),
+                robustnessImpact: robustnessByName[name] || 0
+            }
+        };
+    });
+
+    const edges = graph.edges().map(({ v, w }) => ({
+        data: {
+            id: `${v}->${w}`,
+            source: v,
+            target: w
+        }
+    }));
+
+    return [...nodes, ...edges];
+}
+
+function renderCytoScape(graph, containerId = 'cy', options = {}) {
     const container = document.getElementById(containerId);
     if (!container) {
-        console.error(`renderCytoScape: container with id '${containerId}' not found`);
-        return null;
+        throw new Error(`Container "${containerId}" not found`);
     }
 
-    const elements = [];
-
-
-    console.log('Rendering graph with Cytoscape.js', graph);
-
-    // ---- Nodes ----
-    graph.nodes().forEach(name => {
-        const species = graph.node(name);
-
-        if (!species) {
-            console.warn(`renderCytoScape: species data not found for node '${name}'`);
-            return;
-        }
-
-        if (!species.name) {
-            console.warn(`renderCytoScape: species object missing 'name' property for node '${name}'`);
-            return;
-        }
-
-        elements.push({
-            data: {
-                id: species.name,
-                label: species.name,
-                population: species.population || 0,
-                type: species.speciesType || 'unknown'
-            }
-        });
-    });
-
-
-    console.log('Elements for Cytoscape:', elements);
-
-    // ---- Edges ----
-    graph.edges().forEach(edge => {
-        elements.push({
-            data: {
-                source: edge.v,
-                target: edge.w,
-                weight: 1
-            }
-        });
-    });
-
-
-    console.log('Final elements with edges for Cytoscape:', elements);
-
     const cy = cytoscape({
-        container: container,
-        elements,
-
+        container,
+        elements: buildElements(graph, options.analysis),
         layout: {
-            name: 'breadthfirst',
-            directed: true,
-            padding: 30
+            name: 'cose',
+            animate: true,
+            padding: 28,
+            nodeRepulsion: 9000,
+            idealEdgeLength: 120
         },
-
         style: [
             {
                 selector: 'node',
                 style: {
-                    label: 'data(label)',
-
-                    'background-color': ele => {
-                        const pop = ele.data('population');
-                        const speciesType = ele.data('speciesType');
-                        // const healthStatus = ele.data('healthStatus');
-                        // const growthStage = ele.data('growthStage');
-
-                        if (pop === 0 || (speciesType === 'Animal' ? ele.data('healthStatus') === 'Critical' : ele.data('growthStage') === 'Dying')) return '#b71c1c';   // extinct
-                        if (pop < 30 || (speciesType === 'Animal' ? ele.data('healthStatus') === 'Poor' : ele.data('growthStage') === 'Dormant')) return '#f57c00';    // critical
-                        return '#2e7d32';                  // stable
+                    'background-color': (ele) => {
+                        const status = ele.data('status');
+                        if (status === 'extinct') {
+                            return '#7f1d1d';
+                        }
+                        if (status === 'critical') {
+                            return '#ea580c';
+                        }
+                        return ele.data('trophicLevel') === 0 ? '#3f7d20' : '#176b87';
                     },
-
-                    width: 'mapData(population, 0, 500, 20, 60)',
-                    height: 'mapData(population, 0, 500, 20, 60)',
-
-                    color: '#ffffff',
+                    'border-width': (ele) => {
+                        if (ele.data('isKeystone')) {
+                            return 6;
+                        }
+                        if (ele.data('isCycleMember')) {
+                            return 4;
+                        }
+                        return 2;
+                    },
+                    'border-color': (ele) => {
+                        if (ele.data('isKeystone')) {
+                            return '#b91c1c';
+                        }
+                        if (ele.data('isCycleMember')) {
+                            return '#f59e0b';
+                        }
+                        return '#dff3dd';
+                    },
+                    width: 'mapData(population, 0, 500, 44, 88)',
+                    height: 'mapData(population, 0, 500, 44, 88)',
+                    label: 'data(label)',
+                    shape: (ele) => (ele.data('trophicLevel') === 0 ? 'round-rectangle' : 'ellipse'),
+                    color: '#f8fafc',
+                    'font-size': 11,
+                    'font-weight': 700,
+                    'text-wrap': 'wrap',
+                    'text-max-width': 80,
                     'text-valign': 'center',
-                    'text-outline-width': 2,
-                    'text-outline-color': '#1b1b1b',
-                    'font-size': 10
+                    'text-halign': 'center',
+                    'text-outline-color': '#102420',
+                    'text-outline-width': 2
                 }
             },
             {
                 selector: 'edge',
                 style: {
-                    width: 2,
-                    'line-color': '#9e9e9e',
-                    'target-arrow-color': '#9e9e9e',
+                    width: 2.5,
+                    'line-color': '#7a8b95',
+                    'target-arrow-color': '#7a8b95',
                     'target-arrow-shape': 'triangle',
-                    'curve-style': 'bezier'
+                    'curve-style': 'bezier',
+                    opacity: 0.85
+                }
+            },
+            {
+                selector: 'node:selected',
+                style: {
+                    'overlay-opacity': 0,
+                    'shadow-blur': 22,
+                    'shadow-color': '#f59e0b',
+                    'shadow-opacity': 0.35
                 }
             }
         ]
     });
 
-    console.log('Cytoscape rendering complete.');
+    if (typeof options.onNodeTap === 'function') {
+        cy.on('tap', 'node', (event) => {
+            const node = event.target;
+            const species = graph.node(node.id());
+            options.onNodeTap(species, node.data());
+        });
+    }
+
     return cy;
 }
+
+export { renderCytoScape };
