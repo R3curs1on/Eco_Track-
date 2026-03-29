@@ -1,5 +1,5 @@
 import cytoscape from 'cytoscape';
-import { getSpeciesStatus, inferTrophicLevel, toTitleCase } from './speciesUtils.js';
+import { getSpeciesStatus, inferTrophicLevel, toTitleCase } from '../core/speciesUtils.js';
 
 function buildElements(graph, analysis = {}) {
     const cycleMembers = analysis.cycleMembers || new Set();

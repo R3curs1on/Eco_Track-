@@ -1,8 +1,9 @@
-import CriticalPopulation from './CriticalPopulation.js';
-import { FoodChain } from './FoodChain.js';
-import { syncEcosystemState } from './EcosystemRepository.js';
-import { broadcastEcosystemChanged } from './EcosystemEvents.js';
-import ApiService from './ApiService.js';
+import CriticalPopulation from '../core/CriticalPopulation.js';
+import { FoodChain } from '../core/FoodChain.js';
+import { syncEcosystemState } from '../core/EcosystemRepository.js';
+import { broadcastEcosystemChanged } from '../services/EcosystemEvents.js';
+import ApiService from '../services/ApiService.js';
+import { showNotification } from '../ui/notifications.js';
 
 const criticalPopulation = new CriticalPopulation();
 const foodChain = new FoodChain();
@@ -331,19 +332,6 @@ async function handleRemovePlantSubmit(event) {
     } catch (error) {
         showNotification(error.message, 'error');
     }
-}
-
-function showNotification(message, type = 'success') {
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    notification.textContent = message;
-    document.body.appendChild(notification);
-
-    setTimeout(() => notification.classList.add('show'), 10);
-    setTimeout(() => {
-        notification.classList.remove('show');
-        setTimeout(() => notification.remove(), 300);
-    }, 3200);
 }
 
 window.ecoTrack = {

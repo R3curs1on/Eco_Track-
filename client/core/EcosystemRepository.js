@@ -1,4 +1,4 @@
-import ApiService from './ApiService.js';
+import ApiService from '../services/ApiService.js';
 import { cloneSpeciesData, createClientSpecies, isCriticalSpecies } from './speciesUtils.js';
 
 const SAMPLE_SPECIES = [

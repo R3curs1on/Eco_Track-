@@ -17,17 +17,17 @@
 ## P0 — Must Fix Before Anything Else
 
 ### Graph Sync on Load
-- [ ] On page load, fetch all species from MongoDB and rebuild FoodChain graph in memory
-- [ ] On page load, rebuild CriticalPopulation heap from fetched species
+- [x] On page load, fetch all species from MongoDB and rebuild FoodChain graph in memory
+- [x] On page load, rebuild CriticalPopulation heap from fetched species
 
 ### Error Handling
 - [x] Wrap all ApiService fetch calls in try/catch
-- [ ] Show user-facing error banner (not console.error) on network failure
+- [x] Show user-facing error banner (not console.error) on network failure
 
 ### Fix Tarjan Articulation Point Bugs
 - [x] Rewrite `findKeystoneSpecies()` using corrected DFS-coloring: `disc[]`, `low[]`, `parent[]`
-- [ ] Run against a manually constructed test graph (5 nodes, known articulation points) before wiring to UI
-- [ ] Note: run Tarjan on the **undirected** version of the food web — structural integrity, not direction, determines articulation points
+- [x] Run against a manually constructed test graph (5 nodes, known articulation points) before wiring to UI
+- [x] Note: run Tarjan on the **undirected** version of the food web — structural integrity, not direction, determines articulation points
 
 ---
 
@@ -57,9 +57,9 @@
 - [ ] Expose `runSimulation(years)` — converts years to ticks (1 year = 12 ticks at Δt=0.1) and returns history object
 
 ### Sandbox Mode
-- [ ] Simulation always runs on a **deep clone** of the live species/graph state
-- [ ] Never mutate MongoDB or the live graph during a simulation run
-- [ ] Only commit results back if user explicitly clicks "Apply to Ecosystem"
+- [x] Simulation always runs on a **deep clone** of the live species/graph state
+- [x] Never mutate MongoDB or the live graph during a simulation run
+- [x] Only commit results back if user explicitly clicks "Apply to Ecosystem"
 
 ### Simulation UI (Simulation.html)
 - [ ] Dropdown: simulate 1 / 10 / 50 years
@@ -76,43 +76,43 @@
 ### Cycle Detection
 - [x] ~~Implement `detectCycles(graph)~~` — DFS with 3-color marking (0 = unvisited, 1 = in-stack, 2 = done)
 - [x] ~~Returns array of cycles~~; each cycle is an ordered array of species names e.g. `['wolf', 'deer', 'grass']`
-- [ ] On food chain page: show warning panel listing each detected cycle as `A → B → C → A`
-- [ ] In Cytoscape: give cycle-member nodes an orange border
-- [ ] Ecological note rendered in UI: "Feedback loops cause population oscillation — expected behavior in Lotka-Volterra"
+- [x] On food chain page: show warning panel listing each detected cycle as `A → B → C → A`
+- [x] In Cytoscape: give cycle-member nodes an orange border
+- [x] Ecological note rendered in UI: "Feedback loops cause population oscillation — expected behavior in Lotka-Volterra"
 
 ### Keystone Species Ranking
 - [x] After Tarjan fix: for each articulation point, call `simulateRemoval(name)` and record total population lost across all species
 - [x] Sort articulation points by total population loss descending
-- [ ] Display ranked table: rank | name | impact score (total population units lost)
-- [ ] In Cytoscape: highlight keystone nodes with red border
-- [ ] Add color legend toggle in graph panel (red = keystone, orange = cycle member, default = normal)
+- [x] Display ranked table: rank | name | impact score (total population units lost)
+- [x] In Cytoscape: highlight keystone nodes with red border
+- [x] Add color legend toggle in graph panel (red = keystone, orange = cycle member, default = normal)
 
 ### Robustness Index
-- [ ] For each species, compute: `connectivityLost = (edgesRemoved / totalEdges) * 100`
+- [x] For each species, compute: `connectivityLost = (edgesRemoved / totalEdges) * 100`
 - [ ] Store as `robustnessImpact` on each species object after analysis
-- [ ] Surface in the species info panel (see P3)
+- [x] Surface in the species info panel (see P3)
 
 ---
 
 ## P3 — Ecosystem Stability Score
 
 ### EcosystemScore.js
-- [ ] **Shannon Diversity Index:**
+- [x] **Shannon Diversity Index:**
   `H = -Σ (p_i * ln(p_i))` where `p_i = species.population / totalPopulation`
   Normalize: `H_norm = H / ln(n)` → range 0–1
-- [ ] **Trophic Pyramid Balance:**
+- [x] **Trophic Pyramid Balance:**
   Check `count(level 0) ≥ count(level 1) ≥ count(level 2)`
   Returns 1.0 if pyramid holds, 0.5 if any level is inverted
-- [ ] **Connectivity Density:**
+- [x] **Connectivity Density:**
   `density = edges / (nodes * (nodes - 1))`
   Score = `1 - abs(density - 0.3) / 0.3` — peaks at 0.3, penalizes deviation
-- [ ] **Final score:**
+- [x] **Final score:**
   `score = round((H_norm * 0.4 + T * 0.3 + C * 0.3) * 100)`
 
 ### Wire to Dashboard
-- [ ] Display 0–100 score on main dashboard
-- [ ] Recompute on every species add / remove / population update
-- [ ] Show which sub-metric is lowest, e.g. "⚠ Low biodiversity pulling score down"
+- [x] Display 0–100 score on main dashboard
+- [x] Recompute on every species add / remove / population update
+- [x] Show which sub-metric is lowest, e.g. "⚠ Low biodiversity pulling score down"
 - [ ] After simulation run: show score before and after side-by-side
 
 ---
@@ -120,15 +120,15 @@
 ## P4 — Visualization
 
 ### Species Info Panel (on node click)
-- [ ] Cytoscape `tap` event: show inline side panel (graph stays visible)
-- [ ] Panel displays: name, population, trophic level, predators list, prey list, robustness impact %
-- [ ] If species is keystone: show badge "⚠ Keystone Species"
+- [x] Cytoscape `tap` event: show inline side panel (graph stays visible)
+- [x] Panel displays: name, population, trophic level, predators list, prey list, robustness impact %
+- [x] If species is keystone: show badge "⚠ Keystone Species"
 
 ### Statistics Bar on Dashboard
-- [ ] Total species count
-- [ ] Ecosystem health score
-- [ ] Critical species count (bottom N from priority queue)
-- [ ] Extinct species count (tracked from simulation runs)
+- [x] Total species count
+- [x] Ecosystem health score
+- [x] Critical species count (bottom N from priority queue)
+- [x] Extinct species count (tracked from simulation runs / live state)
 
 ### Simulation Chart
 - [ ] One line per species (Chart.js), x = time ticks, y = population

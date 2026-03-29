@@ -1,4 +1,4 @@
-import { runTarjanSmokeTest } from '../client/TarjanAlgo.js';
+import { runTarjanSmokeTest } from '../client/graph/TarjanAlgo.js';
 
 const result = runTarjanSmokeTest();
 

@@ -1,10 +1,11 @@
-import CriticalPopulation from './CriticalPopulation.js';
-import { FoodChain } from './FoodChain.js';
-import { renderCytoScape } from './RenderCytoscape.js';
-import { syncEcosystemState } from './EcosystemRepository.js';
-import { analyzeEcosystem } from './EcosystemAnalyzer.js';
-import { subscribeToEcosystemChanges } from './EcosystemEvents.js';
-import { getSpeciesStatus, inferTrophicLevel, toTitleCase } from './speciesUtils.js';
+import CriticalPopulation from '../core/CriticalPopulation.js';
+import { FoodChain } from '../core/FoodChain.js';
+import { syncEcosystemState } from '../core/EcosystemRepository.js';
+import { analyzeEcosystem } from '../core/EcosystemAnalyzer.js';
+import { getSpeciesStatus, inferTrophicLevel, toTitleCase } from '../core/speciesUtils.js';
+import { renderCytoScape } from '../graph/RenderCytoscape.js';
+import { subscribeToEcosystemChanges } from '../services/EcosystemEvents.js';
+import { showNotification } from '../ui/notifications.js';
 
 const criticalPopulation = new CriticalPopulation();
 const foodChain = new FoodChain();
@@ -297,20 +298,6 @@ function renderFailure(error) {
     dom.cycleNote.innerHTML = `<p>${message}</p>`;
     renderSpeciesInfo(null);
     showNotification(message, 'error');
-}
-
-function showNotification(message, type = 'success') {
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    notification.textContent = message;
-
-    document.body.appendChild(notification);
-
-    setTimeout(() => notification.classList.add('show'), 10);
-    setTimeout(() => {
-        notification.classList.remove('show');
-        setTimeout(() => notification.remove(), 300);
-    }, 3200);
 }
 
 window.ecoTrack = {

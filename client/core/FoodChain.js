@@ -1,5 +1,5 @@
 import { Graph } from 'graphlib';
-import { Tarjan } from './TarjanAlgo.js';
+import { Tarjan } from '../graph/TarjanAlgo.js';
 import { cloneSpeciesData, isAnimalSpecies, normalizeEats, toLowerName } from './speciesUtils.js';
 
 function uniqueNeighbors(graph, node) {
