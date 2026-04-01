@@ -1,4 +1,8 @@
 import { defineConfig } from 'vite';
+import { resolve } from 'path';
+import { fileURLToPath } from 'url';
+
+const ROOT_DIR = fileURLToPath(new URL('.', import.meta.url));
 
 export default defineConfig({
   root: 'client',
@@ -14,6 +18,13 @@ export default defineConfig({
   },
   build: {
     outDir: '../dist',
-    sourcemap: true
+    sourcemap: true,
+    rollupOptions: {
+      input: {
+        main: resolve(ROOT_DIR, 'client/index.html'),
+        controlPanel: resolve(ROOT_DIR, 'client/control-panel.html'),
+        simulation: resolve(ROOT_DIR, 'client/simulation.html')
+      }
+    }
   }
 });
