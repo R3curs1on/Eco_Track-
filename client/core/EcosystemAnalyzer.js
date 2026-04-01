@@ -5,7 +5,7 @@ function analyzeEcosystem(foodChain) {
     const cycleMembers = new Set(cycles.flat());
     const keystoneSpecies = foodChain.findKeystoneSpecies();
     const keystoneSet = new Set(keystoneSpecies.map((entry) => entry.species.name));
-    const robustnessByName = foodChain.computeRobustnessIndex();
+    const foodChainInvolvementByName = foodChain.computeInvolvementIndex();
     const score = calculateEcosystemScore(foodChain);
 
     return {
@@ -13,7 +13,7 @@ function analyzeEcosystem(foodChain) {
         cycleMembers,
         keystoneSpecies,
         keystoneSet,
-        robustnessByName,
+        foodChainInvolvementByName,
         score
     };
 }

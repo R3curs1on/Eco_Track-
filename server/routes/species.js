@@ -1,5 +1,6 @@
 import express from 'express';
 import Species from '../models/species.js';
+import { syncFoodChainFromSpecies } from '../seed.js';
 
 const router = express.Router();
 
@@ -20,6 +21,14 @@ function normalizeSpeciesPayload(payload) {
 function sendServerError(res, action, error, statusCode = 500) {
     console.error(`${action} failed:`, error);
     res.status(statusCode).json({ error: error.message });
+}
+
+async function syncFoodChainBestEffort(action) {
+    try {
+        await syncFoodChainFromSpecies();
+    } catch (error) {
+        console.error(`${action}: foodchain sync failed:`, error);
+    }
 }
 
 router.get('/', async (_req, res) => {
@@ -48,6 +57,7 @@ router.post('/', async (req, res) => {
     try {
         const payload = normalizeSpeciesPayload(req.body);
         const species = await Species.create(payload);
+        void syncFoodChainBestEffort('POST /api/species');
         res.status(201).json(species);
     } catch (error) {
         sendServerError(res, 'POST /api/species', error, 400);
@@ -69,6 +79,7 @@ router.put('/:name', async (req, res) => {
             return res.status(404).json({ error: 'Species not found' });
         }
 
+        void syncFoodChainBestEffort('PUT /api/species/:name');
         res.json(updatedSpecies);
     } catch (error) {
         sendServerError(res, 'PUT /api/species/:name', error, 400);
@@ -82,6 +93,7 @@ router.delete('/:name', async (req, res) => {
             return res.status(404).json({ error: 'Species not found' });
         }
 
+        void syncFoodChainBestEffort('DELETE /api/species/:name');
         res.json({ ok: true });
     } catch (error) {
         sendServerError(res, 'DELETE /api/species/:name', error);

@@ -2,12 +2,6 @@ import { Graph } from 'graphlib';
 import { Tarjan } from '../graph/TarjanAlgo.js';
 import { cloneSpeciesData, isAnimalSpecies, normalizeEats, toLowerName } from './speciesUtils.js';
 
-function uniqueNeighbors(graph, node) {
-    const successors = graph.successors(node) || [];
-    const predecessors = graph.predecessors(node) || [];
-    return [...new Set([...successors, ...predecessors])];
-}
-
 function rotateCycle(cycle) {
     if (!cycle.length) {
         return cycle;
@@ -298,23 +292,44 @@ class FoodChain {
         return cycles;
     }
 
-    computeRobustnessIndex() {
+computeInvolvementIndex() {
         const totalEdges = this.graph.edgeCount();
-        const robustnessByName = {};
+        const foodChainInvolvementByName = {};
 
         this.graph.nodes().forEach((nodeName) => {
-            const incidentEdges = uniqueNeighbors(this.graph, nodeName).reduce((count, neighbor) => {
-                const outgoing = this.graph.hasEdge(nodeName, neighbor) ? 1 : 0;
-                const incoming = this.graph.hasEdge(neighbor, nodeName) ? 1 : 0;
-                return count + outgoing + incoming;
-            }, 0);
+            const successors = this.graph.successors(nodeName) || [];
+            const predecessors = this.graph.predecessors(nodeName) || [];
+            const uniqueNeighborCount = new Set([...successors, ...predecessors]).size;
 
-            robustnessByName[nodeName] = totalEdges === 0
-                ? 0
-                : Number(((incidentEdges / totalEdges) * 100).toFixed(1));
+            if (totalEdges === 0) {
+                foodChainInvolvementByName[nodeName] = 0;
+            } else {
+                const involvementPercentage = (uniqueNeighborCount / this.graph.nodes().length) * 100;
+                foodChainInvolvementByName[nodeName] = Number(involvementPercentage.toFixed(1));
+            }
         });
 
-        return robustnessByName;
+        return foodChainInvolvementByName;
+    }
+    computeRobustnessIndex() {
+        const totalEdges = this.graph.edgeCount();
+        const robustnessImpactByName = {};
+
+        this.graph.nodes().forEach((nodeName) => {
+            const outgoingEdges = this.graph.outEdges(nodeName) || [];
+            const incomingEdges = this.graph.inEdges(nodeName) || [];
+            const incidentEdges = outgoingEdges.length + incomingEdges.length;
+
+            if (totalEdges === 0) {
+                robustnessImpactByName[nodeName] = 0;
+            } else {
+                const edgesLostIfRemoved = incidentEdges;
+                const percentageLost = (edgesLostIfRemoved / totalEdges) * 100;
+                robustnessImpactByName[nodeName] = Number(percentageLost.toFixed(1));
+            }
+        });
+
+        return robustnessImpactByName;
     }
 }
 

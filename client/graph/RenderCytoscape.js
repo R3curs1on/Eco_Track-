@@ -4,7 +4,7 @@ import { getSpeciesStatus, inferTrophicLevel, toTitleCase } from '../core/specie
 function buildElements(graph, analysis = {}) {
     const cycleMembers = analysis.cycleMembers || new Set();
     const keystoneSet = analysis.keystoneSet || new Set();
-    const robustnessByName = analysis.robustnessByName || {};
+    const foodChainInvolvementByName = analysis.foodChainInvolvementByName || {};
 
     const nodes = graph.nodes().map((name) => {
         const species = graph.node(name);
@@ -13,17 +13,17 @@ function buildElements(graph, analysis = {}) {
 
         return {
             data: {
-                id: name,
-                label: toTitleCase(species.name),
-                population: Number(species.population || 0),
+                id: name,  
+                label: toTitleCase(species.name), // Display name in title case
+                population: Number(species.population || 0),  // Use population for node size mapping
                 speciesType: toTitleCase(species.speciesType),
                 status: getSpeciesStatus(species),
                 trophicLevel: inferTrophicLevel(species),
-                isCycleMember: cycleMembers.has(name),
-                isKeystone: keystoneSet.has(name),
+                isCycleMember: cycleMembers.has(name),  // Highlight if part of a cycle by border style
+                isKeystone: keystoneSet.has(name),    // Highlight if keystone species by border style red
                 prey: prey.join(', '),
                 predators: predators.join(', '),
-                robustnessImpact: robustnessByName[name] || 0
+                foodChainInvolvementImpact: foodChainInvolvementByName[name] || 0
             }
         };
     });

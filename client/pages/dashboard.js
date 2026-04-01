@@ -57,11 +57,17 @@ function setupEventListeners() {
 }
 
 async function refreshDashboard(showToast = false) {
-    try {
-        const { species } = await syncEcosystemState(foodChain, criticalPopulation);
-        state.species = species;
+    try { 
+        const syncResult = await syncEcosystemState(foodChain, criticalPopulation);
+        state.species = syncResult.species;
+ 
+        if (foodChain.getAllSpecies().length === 0) {
+            console.warn('Graph is empty after sync');
+            renderFailure(new Error('No species in ecosystem'));
+            return;
+        } 
         state.analysis = analyzeEcosystem(foodChain);
-
+ 
         renderStats();
         renderScoreSummary();
         renderSpeciesOverview();
@@ -71,9 +77,10 @@ async function refreshDashboard(showToast = false) {
         renderGraph();
 
         if (showToast) {
-            showNotification('Dashboard synced with MongoDB');
+            showNotification('Ecosystem synced successfully', 'success');
         }
     } catch (error) {
+        console.error('Failed to sync ecosystem data:', error);
         renderFailure(error);
     }
 }
@@ -261,20 +268,57 @@ function renderGraph() {
     }
 }
 
+// function renderSpeciesInfo(species) {
+//     if (!species) {
+//         dom.speciesInfoPanel.classList.add('empty');
+//         dom.speciesInfoPanel.innerHTML = `
+//             <h3>Species Details</h3>
+//             <p>Select a node in the graph to inspect predators, prey, trophic level, and food Chain Involvement impact.</p>
+//         `;
+//         return;
+//     }
+
+//     const prey = foodChain.getAllPrey(species.name).map(toTitleCase);
+//     const predators = foodChain.getAllPredators(species.name).map(toTitleCase);
+//     const foodChainInvolvementImpact = state.analysis.foodChainInvolvementByName[species.name] || 0;
+//     const isKeystone = state.analysis.keystoneSet.has(species.name);
+
+//     dom.speciesInfoPanel.classList.remove('empty');
+//     dom.speciesInfoPanel.innerHTML = `
+//         <h3>${toTitleCase(species.name)}</h3>
+//         ${isKeystone ? '<span class="badge badge-danger">Keystone Species</span>' : ''}
+//         <p><strong>Population:</strong> ${Number(species.population || 0)}</p>
+//         <p><strong>Trophic Level:</strong> ${inferTrophicLevel(species)}</p>
+//         <p><strong>Predators:</strong> ${predators.length ? predators.join(', ') : 'None'}</p>
+//         <p><strong>Prey:</strong> ${prey.length ? prey.join(', ') : 'None'}</p>
+//         <p><strong>food Chain Involvement Impact:</strong> ${foodChainInvolvementImpact}% connectivity lost</p>
+//     `;
+// }
+
 function renderSpeciesInfo(species) {
     if (!species) {
         dom.speciesInfoPanel.classList.add('empty');
         dom.speciesInfoPanel.innerHTML = `
             <h3>Species Details</h3>
-            <p>Select a node in the graph to inspect predators, prey, trophic level, and robustness impact.</p>
+            <p>Select a node in the graph to inspect predators, prey, trophic level, and food Chain Involvement impact.</p>
+        `;
+        return;
+    }
+
+    // Safety check: ensure state.analysis exists
+    if (!state.analysis) {
+        dom.speciesInfoPanel.classList.add('empty');
+        dom.speciesInfoPanel.innerHTML = `
+            <h3>Loading...</h3>
+            <p>Ecosystem analysis in progress.</p>
         `;
         return;
     }
 
     const prey = foodChain.getAllPrey(species.name).map(toTitleCase);
     const predators = foodChain.getAllPredators(species.name).map(toTitleCase);
-    const robustnessImpact = state.analysis.robustnessByName[species.name] || 0;
-    const isKeystone = state.analysis.keystoneSet.has(species.name);
+    const foodChainInvolvementImpact = state.analysis?.foodChainInvolvementByName?.[species.name] || 0;
+    const isKeystone = state.analysis?.keystoneSet?.has(species.name) || false;
 
     dom.speciesInfoPanel.classList.remove('empty');
     dom.speciesInfoPanel.innerHTML = `
@@ -284,7 +328,7 @@ function renderSpeciesInfo(species) {
         <p><strong>Trophic Level:</strong> ${inferTrophicLevel(species)}</p>
         <p><strong>Predators:</strong> ${predators.length ? predators.join(', ') : 'None'}</p>
         <p><strong>Prey:</strong> ${prey.length ? prey.join(', ') : 'None'}</p>
-        <p><strong>Robustness Impact:</strong> ${robustnessImpact}% connectivity lost</p>
+        <p><strong>food Chain Involvement Impact:</strong> ${foodChainInvolvementImpact}% connectivity lost</p>
     `;
 }
 

@@ -4,7 +4,7 @@ EcoTrack is a full-stack habitat-management toolkit that keeps a MongoDB-backed 
 
 ## Highlights
 - **Live dashboard:** `client/pages/dashboard.js` rebuilds the graph on every refresh, shows the health score, counts of critical/extinct species, and renders Cytoscape with cycle/keystone styling plus a species info panel.
-- **Food-web intelligence:** `FoodChain` (graphlib) tracks predator→prey edges, runs DFS cycle detection, Tarjan articulation points/bridges, and calculates a robustness index. `EcosystemAnalyzer` feeds this data into the UI.
+- **Food-web intelligence:** `FoodChain` (graphlib) tracks predator→prey edges, runs DFS cycle detection, Tarjan articulation points/bridges, and calculates a Food Chain Involvement. `EcosystemAnalyzer` feeds this data into the UI.
 - **Ecosystem health score:** `EcosystemScore` uses Shannon diversity, trophic pyramid balance, and connectivity density (0.4/0.3/0.3 weights) to compute a 0–100 score and reports the weakest metric.
 - **Control panel CRUD:** `client/pages/controlPanel.js` exposes add/update/remove forms for animals/plants, normalizes requests through `ApiService`, and publishes `BroadcastChannel` events so the dashboard and sandbox refresh automatically.
 - **Sandbox simulator:** `SandboxMode` deep-clones `FoodChain`, runs `simulateRemoval` with BFS impact propagation, and only writes back via `applySandboxSession` when the user explicitly applies the scenario.
@@ -64,7 +64,7 @@ Runs `scripts/tarjan-smoke.mjs` (via `client/graph/TarjanAlgo.js`) to verify art
 ## Frontend Routes
 - `/` → Dashboard with stats, Cytoscape visualization, cycle/keystone panels, and species cards.
 - `/ControlPanel.html` → CRUD forms for animals/plants and removal flows; publishes broadcasts for other tabs.
-- `/SImulation.html` → Sandbox simulator and live graph comparison; apply button writes removal impacts after confirmation.
+- `/Simulation.html` → Sandbox simulator and live graph comparison; apply button writes removal impacts after confirmation.
 
 ## API Reference (`/api` prefix)
 - `GET /health` — Simple `{ ok: true }` health check.
@@ -86,7 +86,7 @@ Runs `scripts/tarjan-smoke.mjs` (via `client/graph/TarjanAlgo.js`) to verify art
 - `EcosystemScore` computes a weighted score from Shannon diversity, trophic balance, and connectivity density. The dashboard shows each metric (0–100) and highlights the weakest contributor.
 - `FoodChain.simulateRemoval` clones the graph, spreads impact via BFS, removes the target node in the clone, and returns `results` with before/after populations plus total population loss.
 - `FoodChain.findCycles` uses DFS with 3-color marking to highlight feedback loops; `RenderCytoscape` paints cycle nodes with orange borders, keystones with red, and adjusts node sizes by population.
-- `FoodChain.computeRobustnessIndex` reports the percentage of edges incident to each species, surfaced in the species info panel.
+- `FoodChain.computeInvolvementIndex` reports the percentage of edges incident to each species, surfaced in the species info panel.
 - `EcosystemAnalyzer` ties together cycles, keystone ranking, robustness, and score data for the UI.
 
 ## Sandbox Simulation

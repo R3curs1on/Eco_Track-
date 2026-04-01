@@ -2,13 +2,17 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
 import mongoose from 'mongoose';
+import foodChainRoutes from './routes/foodchain.js';
 import speciesRoutes from './routes/species.js';
+import { seedDatabaseIfNeeded } from './seed.js';
 
 dotenv.config();
 
 const app = express();
 const PORT = Number(process.env.PORT || 5000);
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/ecotrack';
+
+MONGO_URI = `mongodb+srv://vedant_db_user:J9r82El8oA2vDNnu@cluster0.riyer7x.mongodb.net/?appName=Cluster0`;
 
 app.use(cors());
 app.use(express.json());
@@ -23,10 +27,15 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.use('/api/species', speciesRoutes);
+app.use('/api/foodchain', foodChainRoutes);
 
 mongoose.connect(MONGO_URI)
     .then(() => {
         console.log('Connected to MongoDB');
+        return seedDatabaseIfNeeded();
+    })
+    .then(({ species, foodChain }) => {
+        console.log(`Seed check complete: ${species.length} species, ${foodChain.length} food-chain edges`);
         app.listen(PORT, () => {
             console.log(`Server running on http://localhost:${PORT}`);
         });

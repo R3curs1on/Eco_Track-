@@ -1,4 +1,37 @@
+# Environment
 .env
+.env.local
+.env.*.local
+
+
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# Runtime
+.node_repl_history
+
+
+DEPLOY_VERCEL_RENDER_ATLAS_STEP_BY_STEP.md
 
 ///
 Verdict
@@ -34,7 +67,7 @@ Verdict
 
   Should Do
 
-  - Fix naming/polish issues like SImulation.html in client/index.html:18, client/ControlPanel.html:19, and README.md:154. Small mistakes weaken first
+  - Fix naming/polish issues like Simulation.html in client/index.html:18, client/ControlPanel.html:19, and README.md:154. Small mistakes weaken first
     impressions.
   - Add a deployed demo, screenshots, or a short walkthrough video. That usually matters more than one extra feature.
   - Add ARCHITECTURE.md and ALGORITHMS.md. This project has enough logic that good docs would make it much stronger in interviews.

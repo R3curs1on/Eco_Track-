@@ -26,7 +26,7 @@ function cloneSpeciesData(species) {
         age: Number(species?.age || 0),
         eats: normalizeEats(species?.eats),
         trophicLevel: Number.isFinite(species?.trophicLevel) ? Number(species.trophicLevel) : undefined,
-        robustnessImpact: Number.isFinite(species?.robustnessImpact) ? Number(species.robustnessImpact) : 0
+        foodChainInvolvement: Number.isFinite(species?.foodChainInvolvement) ? Number(species.foodChainInvolvement) : 0
     };
 }
 
