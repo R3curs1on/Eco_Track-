@@ -10,6 +10,7 @@ dotenv.config();
 
 const app = express();
 const PORT = Number(process.env.PORT || 5000);
+const HOST = process.env.HOST || '0.0.0.0';
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/ecotrack';
 
 app.use(cors());
@@ -34,8 +35,11 @@ mongoose.connect(MONGO_URI)
     })
     .then(({ species, foodChain }) => {
         console.log(`Seed check complete: ${species.length} species, ${foodChain.length} food-chain edges`);
-        app.listen(PORT, () => {
-            console.log(`Server running on http://localhost:${PORT}`);
+        app.listen(PORT, HOST, () => {
+            console.log(`Server running on http://${HOST}:${PORT}`);
+            if (process.env.RENDER_EXTERNAL_URL) {
+                console.log(`Public URL: ${process.env.RENDER_EXTERNAL_URL}`);
+            }
         });
     })
     .catch((error) => {
