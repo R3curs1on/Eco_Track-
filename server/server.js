@@ -12,8 +12,6 @@ const app = express();
 const PORT = Number(process.env.PORT || 5000);
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/ecotrack';
 
-MONGO_URI = `mongodb+srv://vedant_db_user:J9r82El8oA2vDNnu@cluster0.riyer7x.mongodb.net/?appName=Cluster0`;
-
 app.use(cors());
 app.use(express.json());
 
