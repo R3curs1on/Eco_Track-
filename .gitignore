@@ -10,6 +10,15 @@ node_modules/
 dist/
 build/
 *.tsbuildinfo
+coverage/
+
+# Tooling / caches
+.vite/
+.cache/
+.eslintcache
+.codex
+tmp/
+temp/
 
 # IDE
 .vscode/
@@ -26,4 +35,3 @@ yarn-debug.log*
 
 # Runtime
 .node_repl_history
-
