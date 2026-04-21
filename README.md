@@ -2,6 +2,8 @@
 
 EcoTrack is a full-stack habitat-management toolkit that keeps a MongoDB-backed species catalog in sync with a Vite-powered dashboard, Cytoscape food-web visualization, and simulation sandbox. The goal is to surface structural risks (cycles, keystone loss, poor connectivity) while letting you manage the live dataset and experiment with removals before applying them to the database.
 
+![Demo GIF](./demo/ecotrack.gif)
+
 ## Highlights
 - **Live dashboard:** `client/pages/dashboard.js` rebuilds the graph on every refresh, shows the health score, counts of critical/extinct species, and renders Cytoscape with cycle/keystone styling plus a species info panel.
 - **Food-web intelligence:** `FoodChain` (graphlib) tracks predator→prey edges, runs DFS cycle detection, Tarjan articulation points/bridges, and calculates a Food Chain Involvement. `EcosystemAnalyzer` feeds this data into the UI.
